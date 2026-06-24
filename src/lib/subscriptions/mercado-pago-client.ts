@@ -193,7 +193,8 @@ const requestWithEnvironment = async <T>(
   } catch (error) {
     if (
       error instanceof SubscriptionError &&
-      error.code === "PROVIDER_UNAUTHORIZED"
+      (error.code === "PROVIDER_UNAUTHORIZED" ||
+        error.code === "PROVIDER_UNAVAILABLE")
     ) {
       return request<T>(path, init, "default");
     }
