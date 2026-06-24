@@ -2,7 +2,6 @@ import "server-only";
 
 import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import {
   decryptCustomerData,
   encryptCustomerData,
@@ -46,15 +45,28 @@ const databasePath = isAbsolute(configuredPath)
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const useSupabase = Boolean(supabaseUrl && supabaseKey);
+const isVercelRuntime = process.env.VERCEL === "1";
+const localDatabaseUnavailable = !useSupabase && isVercelRuntime;
+
+type SQLiteDatabase = InstanceType<typeof import("node:sqlite").DatabaseSync>;
 
 const globalDatabase = globalThis as typeof globalThis & {
-  cafeCustomerDatabase?: DatabaseSync;
+  cafeCustomerDatabase?: SQLiteDatabase;
 };
 
-const getLocalDatabase = () => {
+const databaseConfigurationError = () =>
+  new Error(
+    "Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY na Vercel para usar contas de clientes.",
+  );
+
+const getLocalDatabase = async () => {
+  if (localDatabaseUnavailable) {
+    throw databaseConfigurationError();
+  }
   if (globalDatabase.cafeCustomerDatabase) {
     return globalDatabase.cafeCustomerDatabase;
   }
+  const { DatabaseSync } = await import("node:sqlite");
   mkdirSync(dirname(databasePath), { recursive: true });
   const database = new DatabaseSync(databasePath);
   database.exec(`
@@ -170,7 +182,8 @@ export const createCustomerAccount = async (input: {
     });
     return parseAccount(rows[0]);
   }
-  getLocalDatabase()
+  const database = await getLocalDatabase();
+  database
     .prepare(
       `INSERT INTO customer_accounts (
         id, email, password_hash, profile_cipher, address_cipher,
@@ -196,7 +209,7 @@ const getAccountRowByEmail = async (email: string) => {
     );
     return rows[0];
   }
-  return getLocalDatabase()
+  return (await getLocalDatabase())
     .prepare("SELECT * FROM customer_accounts WHERE email = ?")
     .get(email) as AccountRow | undefined;
 };
@@ -208,7 +221,7 @@ const getAccountRowById = async (id: string) => {
     );
     return rows[0];
   }
-  return getLocalDatabase()
+  return (await getLocalDatabase())
     .prepare("SELECT * FROM customer_accounts WHERE id = ?")
     .get(id) as AccountRow | undefined;
 };
@@ -224,7 +237,7 @@ export const listCustomerAccounts = async () => {
     ? await supabaseRequest<AccountRow[]>(
         "customer_accounts?order=created_at.desc&limit=500",
       )
-    : (getLocalDatabase()
+    : ((await getLocalDatabase())
         .prepare(
           "SELECT * FROM customer_accounts ORDER BY datetime(created_at) DESC",
         )
@@ -256,7 +269,8 @@ export const updateCustomerDetails = async (
     );
     return parseAccount(rows[0]);
   }
-  getLocalDatabase()
+  const database = await getLocalDatabase();
+  database
     .prepare(
       `UPDATE customer_accounts
        SET profile_cipher = ?, address_cipher = ?, updated_at = ?
@@ -289,7 +303,8 @@ export const updateCustomerPassword = async (
       },
     );
   } else {
-    getLocalDatabase()
+    const database = await getLocalDatabase();
+    database
       .prepare(
         "UPDATE customer_accounts SET password_hash = ?, updated_at = ? WHERE id = ?",
       )
@@ -306,7 +321,8 @@ export const createCustomerSessionRecord = async (input: SessionRow) => {
       body: JSON.stringify(input),
     });
   } else {
-    getLocalDatabase()
+    const database = await getLocalDatabase();
+    database
       .prepare(
         `INSERT INTO customer_sessions (
           token_hash, account_id, expires_at, created_at
@@ -333,7 +349,7 @@ export const getCustomerSessionRecord = async (
     );
     session = rows[0];
   } else {
-    session = getLocalDatabase()
+    session = (await getLocalDatabase())
       .prepare("SELECT * FROM customer_sessions WHERE token_hash = ?")
       .get(tokenHash) as SessionRow | undefined;
   }
@@ -352,7 +368,8 @@ export const deleteCustomerSessionRecord = async (tokenHash: string) => {
       { method: "DELETE", headers: { Prefer: "return=minimal" } },
     );
   } else {
-    getLocalDatabase()
+    const database = await getLocalDatabase();
+    database
       .prepare("DELETE FROM customer_sessions WHERE token_hash = ?")
       .run(tokenHash);
   }
@@ -365,7 +382,8 @@ export const deleteCustomerSessionsForAccount = async (accountId: string) => {
       { method: "DELETE", headers: { Prefer: "return=minimal" } },
     );
   } else {
-    getLocalDatabase()
+    const database = await getLocalDatabase();
+    database
       .prepare("DELETE FROM customer_sessions WHERE account_id = ?")
       .run(accountId);
   }
@@ -379,7 +397,8 @@ export const createPasswordResetRecord = async (input: ResetRow) => {
       body: JSON.stringify(input),
     });
   } else {
-    getLocalDatabase()
+    const database = await getLocalDatabase();
+    database
       .prepare(
         `INSERT INTO customer_password_resets (
           token_hash, account_id, expires_at, used_at, created_at
@@ -405,7 +424,7 @@ export const consumePasswordResetRecord = async (tokenHash: string) => {
     );
     row = rows[0];
   } else {
-    row = getLocalDatabase()
+    row = (await getLocalDatabase())
       .prepare(
         `SELECT * FROM customer_password_resets
          WHERE token_hash = ? AND used_at IS NULL`,
@@ -424,7 +443,8 @@ export const consumePasswordResetRecord = async (tokenHash: string) => {
       },
     );
   } else {
-    getLocalDatabase()
+    const database = await getLocalDatabase();
+    database
       .prepare(
         "UPDATE customer_password_resets SET used_at = ? WHERE token_hash = ?",
       )

@@ -2,7 +2,6 @@ import "server-only";
 
 import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import type {
   AdminDashboardStats,
   FulfillmentStatus,
@@ -98,16 +97,29 @@ const databasePath = (() => {
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const useSupabase = Boolean(supabaseUrl && supabaseKey);
+const isVercelRuntime = process.env.VERCEL === "1";
+const localDatabaseUnavailable = !useSupabase && isVercelRuntime;
+
+type SQLiteDatabase = InstanceType<typeof import("node:sqlite").DatabaseSync>;
 
 const globalDatabase = globalThis as typeof globalThis & {
-  cafeOrdersDatabase?: DatabaseSync;
+  cafeOrdersDatabase?: SQLiteDatabase;
 };
 
-const getLocalDatabase = () => {
+const databaseConfigurationError = () =>
+  new Error(
+    "Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY na Vercel para salvar pedidos e configuraÃ§Ãµes.",
+  );
+
+const getLocalDatabase = async () => {
+  if (localDatabaseUnavailable) {
+    throw databaseConfigurationError();
+  }
   if (globalDatabase.cafeOrdersDatabase) {
     return globalDatabase.cafeOrdersDatabase;
   }
 
+  const { DatabaseSync } = await import("node:sqlite");
   mkdirSync(dirname(databasePath), { recursive: true });
   const database = new DatabaseSync(databasePath);
   database.exec(`
@@ -298,7 +310,8 @@ export const createOrder = async (input: CreateOrderInput) => {
     return parseOrder(rows[0]);
   }
 
-  getLocalDatabase()
+  const database = await getLocalDatabase();
+  database
     .prepare(
       `INSERT INTO orders (
         id, customer_account_id, order_number, status, customer_json, address_json,
@@ -333,7 +346,7 @@ export const getOrderById = async (id: string) => {
     return parseOrder(rows[0]);
   }
   return parseOrder(
-    getLocalDatabase().prepare("SELECT * FROM orders WHERE id = ?").get(id) as
+    (await getLocalDatabase()).prepare("SELECT * FROM orders WHERE id = ?").get(id) as
       | OrderRow
       | undefined,
   );
@@ -347,7 +360,7 @@ export const getOrderByPaymentId = async (paymentId: string) => {
     return parseOrder(rows[0]);
   }
   return parseOrder(
-    getLocalDatabase()
+    (await getLocalDatabase())
       .prepare("SELECT * FROM orders WHERE payment_id = ?")
       .get(paymentId) as OrderRow | undefined,
   );
@@ -362,7 +375,7 @@ export const listOrdersByCustomerAccountId = async (accountId: string) => {
       )}&order=created_at.desc&limit=200`,
     );
   } else {
-    rows = getLocalDatabase()
+    rows = (await getLocalDatabase())
       .prepare(
         `SELECT * FROM orders
          WHERE customer_account_id = ?
@@ -411,7 +424,8 @@ export const updateOrderPayment = async (
     return parseOrder(rows[0]);
   }
 
-  getLocalDatabase()
+  const database = await getLocalDatabase();
+  database
     .prepare(
       `UPDATE orders SET
         status = ?,
@@ -453,7 +467,7 @@ export const listOrders = async (filters: OrderFilters = {}) => {
       `orders?order=created_at.desc&limit=${limit}&offset=${offset}`,
     );
   } else {
-    rows = getLocalDatabase()
+    rows = (await getLocalDatabase())
       .prepare(
         "SELECT * FROM orders ORDER BY datetime(created_at) DESC LIMIT ? OFFSET ?",
       )
@@ -529,7 +543,8 @@ export const updateOrderAdmin = async (
     return parseOrder(rows[0]);
   }
 
-  getLocalDatabase()
+  const database = await getLocalDatabase();
+  database
     .prepare(
       `UPDATE orders SET
         fulfillment_status = ?,
@@ -552,7 +567,8 @@ const getProductSettingsRows = async (): Promise<ProductSettingsRow[]> => {
   if (useSupabase) {
     return supabaseRequest<ProductSettingsRow[]>("product_settings?select=*");
   }
-  return getLocalDatabase()
+  if (localDatabaseUnavailable) return [];
+  return (await getLocalDatabase())
     .prepare("SELECT * FROM product_settings")
     .all() as unknown as ProductSettingsRow[];
 };
@@ -656,7 +672,8 @@ export const updateProductSettings = async (
       },
     );
   } else {
-    getLocalDatabase()
+    const database = await getLocalDatabase();
+    database
       .prepare(
         `INSERT INTO product_settings (
           product_id, price, active, stock, featured, content_json, updated_at
@@ -727,7 +744,8 @@ export const getSiteContent = async (): Promise<SiteContent> => {
     );
     row = rows[0];
   } else {
-    row = getLocalDatabase()
+    if (localDatabaseUnavailable) return defaultSiteContent;
+    row = (await getLocalDatabase())
       .prepare(
         "SELECT setting_key, content_json, updated_at FROM content_settings WHERE setting_key = 'main'",
       )
@@ -761,7 +779,8 @@ export const updateSiteContent = async (
       },
     );
   } else {
-    getLocalDatabase()
+    const database = await getLocalDatabase();
+    database
       .prepare(
         `INSERT INTO content_settings (setting_key, content_json, updated_at)
          VALUES (?, ?, ?)

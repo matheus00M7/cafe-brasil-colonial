@@ -3,7 +3,6 @@ import "server-only";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
-import { DatabaseSync } from "node:sqlite";
 import type {
   StoredSubscription,
   SubscriptionAddress,
@@ -68,15 +67,28 @@ const databasePath = isAbsolute(configuredDatabasePath)
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const useSupabase = Boolean(supabaseUrl && supabaseKey);
+const isVercelRuntime = process.env.VERCEL === "1";
+const localDatabaseUnavailable = !useSupabase && isVercelRuntime;
+
+type SQLiteDatabase = InstanceType<typeof import("node:sqlite").DatabaseSync>;
 
 const globalDatabase = globalThis as typeof globalThis & {
-  cafeSubscriptionsDatabase?: DatabaseSync;
+  cafeSubscriptionsDatabase?: SQLiteDatabase;
 };
 
-const getLocalDatabase = () => {
+const databaseConfigurationError = () =>
+  new Error(
+    "Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY na Vercel para usar assinaturas.",
+  );
+
+const getLocalDatabase = async () => {
+  if (localDatabaseUnavailable) {
+    throw databaseConfigurationError();
+  }
   if (globalDatabase.cafeSubscriptionsDatabase) {
     return globalDatabase.cafeSubscriptionsDatabase;
   }
+  const { DatabaseSync } = await import("node:sqlite");
   mkdirSync(dirname(databasePath), { recursive: true });
   const database = new DatabaseSync(databasePath);
   database.exec(`
@@ -221,7 +233,8 @@ export const createSubscriptionRecord = async (input: CreateRecordInput) => {
     return parseSubscription(rows[0]);
   }
 
-  getLocalDatabase()
+  const database = await getLocalDatabase();
+  database
     .prepare(
       `INSERT INTO subscriptions (
         id, customer_account_id, subscription_number, mercado_pago_id, status,
@@ -292,7 +305,8 @@ export const updateSubscriptionRecord = async (
 
   const current = await getSubscriptionById(id);
   if (!current) return null;
-  getLocalDatabase()
+  const database = await getLocalDatabase();
+  database
     .prepare(
       `UPDATE subscriptions SET
         mercado_pago_id = ?,
@@ -329,7 +343,7 @@ export const getSubscriptionById = async (id: string) => {
     return parseSubscription(rows[0]);
   }
   return parseSubscription(
-    getLocalDatabase()
+    (await getLocalDatabase())
       .prepare("SELECT * FROM subscriptions WHERE id = ?")
       .get(id) as SubscriptionRow | undefined,
   );
@@ -343,7 +357,7 @@ export const getSubscriptionByMercadoPagoId = async (id: string) => {
     return parseSubscription(rows[0]);
   }
   return parseSubscription(
-    getLocalDatabase()
+    (await getLocalDatabase())
       .prepare("SELECT * FROM subscriptions WHERE mercado_pago_id = ?")
       .get(id) as SubscriptionRow | undefined,
   );
@@ -354,7 +368,7 @@ export const listSubscriptions = async () => {
     ? await supabaseRequest<SubscriptionRow[]>(
         "subscriptions?order=created_at.desc&limit=500",
       )
-    : (getLocalDatabase()
+    : ((await getLocalDatabase())
         .prepare(
           "SELECT * FROM subscriptions ORDER BY datetime(created_at) DESC",
         )
@@ -371,7 +385,7 @@ export const listSubscriptionsByCustomerAccountId = async (
           accountId,
         )}&order=created_at.desc&limit=200`,
       )
-    : (getLocalDatabase()
+    : ((await getLocalDatabase())
         .prepare(
           `SELECT * FROM subscriptions
            WHERE customer_account_id = ?
@@ -407,7 +421,7 @@ export const verifySubscriptionManagementToken = async (
     );
     storedHash = rows[0]?.management_token_hash || "";
   } else {
-    const row = getLocalDatabase()
+    const row = (await getLocalDatabase())
       .prepare(
         "SELECT management_token_hash FROM subscriptions WHERE id = ?",
       )
