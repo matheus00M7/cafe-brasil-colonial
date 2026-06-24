@@ -1,0 +1,69 @@
+@import "@fontsource-variable/montserrat";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --brand-brown: #632413;
+  --brand-cream: #fadaad;
+  --brand-green: #046a38;
+  --brand-yellow: #ffcd00;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: #fff9f0;
+  color: #2b211c;
+  font-family: "Montserrat Variable", Montserrat, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--brand-cream);
+  color: var(--brand-brown);
+}
+
+a,
+button,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.brand-pattern {
+  background-image: url("/brand/pattern-official.png");
+  background-repeat: repeat;
+  background-size: 480px;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    animation: reveal 0.65s ease both;
+  }
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
