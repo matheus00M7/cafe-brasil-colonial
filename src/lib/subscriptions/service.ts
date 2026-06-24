@@ -88,6 +88,11 @@ export const createSubscription = async (
     };
   } catch (error) {
     const normalized = normalizeSubscriptionError(error);
+    console.warn("[subscriptions] Mercado Pago subscription failed", {
+      code: normalized.code,
+      status: normalized.status,
+      detail: normalized.detail || normalized.message,
+    });
     await updateSubscriptionRecord(localId, {
       status: "error",
       lastError: `${normalized.code}: ${
