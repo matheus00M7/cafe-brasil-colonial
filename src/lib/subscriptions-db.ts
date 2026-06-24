@@ -342,6 +342,7 @@ export const getSubscriptionById = async (id: string) => {
     );
     return parseSubscription(rows[0]);
   }
+  if (localDatabaseUnavailable) return null;
   return parseSubscription(
     (await getLocalDatabase())
       .prepare("SELECT * FROM subscriptions WHERE id = ?")
@@ -356,6 +357,7 @@ export const getSubscriptionByMercadoPagoId = async (id: string) => {
     );
     return parseSubscription(rows[0]);
   }
+  if (localDatabaseUnavailable) return null;
   return parseSubscription(
     (await getLocalDatabase())
       .prepare("SELECT * FROM subscriptions WHERE mercado_pago_id = ?")
@@ -368,6 +370,8 @@ export const listSubscriptions = async () => {
     ? await supabaseRequest<SubscriptionRow[]>(
         "subscriptions?order=created_at.desc&limit=500",
       )
+    : localDatabaseUnavailable
+      ? []
     : ((await getLocalDatabase())
         .prepare(
           "SELECT * FROM subscriptions ORDER BY datetime(created_at) DESC",
@@ -385,6 +389,8 @@ export const listSubscriptionsByCustomerAccountId = async (
           accountId,
         )}&order=created_at.desc&limit=200`,
       )
+    : localDatabaseUnavailable
+      ? []
     : ((await getLocalDatabase())
         .prepare(
           `SELECT * FROM subscriptions
@@ -421,6 +427,7 @@ export const verifySubscriptionManagementToken = async (
     );
     storedHash = rows[0]?.management_token_hash || "";
   } else {
+    if (localDatabaseUnavailable) return false;
     const row = (await getLocalDatabase())
       .prepare(
         "SELECT management_token_hash FROM subscriptions WHERE id = ?",
