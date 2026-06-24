@@ -466,6 +466,8 @@ export const listOrders = async (filters: OrderFilters = {}) => {
     rows = await supabaseRequest<OrderRow[]>(
       `orders?order=created_at.desc&limit=${limit}&offset=${offset}`,
     );
+  } else if (localDatabaseUnavailable) {
+    rows = [];
   } else {
     rows = (await getLocalDatabase())
       .prepare(
