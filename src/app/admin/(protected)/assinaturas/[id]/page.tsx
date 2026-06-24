@@ -1,5 +1,11 @@
 import { notFound } from "next/navigation";
-import { ArrowLeft, CalendarCheck, CreditCard, MapPin } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CalendarCheck,
+  CreditCard,
+  MapPin,
+} from "lucide-react";
 import Link from "next/link";
 import { getSubscriptionById } from "@/lib/subscriptions-db";
 import { formatCurrency } from "@/lib/formatCurrency";
@@ -86,6 +92,22 @@ export default async function AdminSubscriptionPage({
           </p>
         </article>
       </div>
+
+      {subscription.lastError ? (
+        <section className="mt-6 rounded-3xl border border-red-200 bg-red-50 p-6 text-red-950 shadow-card">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-1 h-6 w-6 shrink-0 text-red-700" />
+            <div>
+              <h2 className="text-lg font-extrabold">
+                Último erro do Mercado Pago
+              </h2>
+              <p className="mt-2 break-words text-sm leading-6">
+                {subscription.lastError}
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className="mt-6 rounded-3xl border border-brand-brown/10 bg-white p-6 shadow-card">
         <h2 className="text-xl font-extrabold text-brand-brown">
