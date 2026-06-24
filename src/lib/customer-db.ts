@@ -209,6 +209,7 @@ const getAccountRowByEmail = async (email: string) => {
     );
     return rows[0];
   }
+  if (localDatabaseUnavailable) return undefined;
   return (await getLocalDatabase())
     .prepare("SELECT * FROM customer_accounts WHERE email = ?")
     .get(email) as AccountRow | undefined;
@@ -221,6 +222,7 @@ const getAccountRowById = async (id: string) => {
     );
     return rows[0];
   }
+  if (localDatabaseUnavailable) return undefined;
   return (await getLocalDatabase())
     .prepare("SELECT * FROM customer_accounts WHERE id = ?")
     .get(id) as AccountRow | undefined;
@@ -237,6 +239,8 @@ export const listCustomerAccounts = async () => {
     ? await supabaseRequest<AccountRow[]>(
         "customer_accounts?order=created_at.desc&limit=500",
       )
+    : localDatabaseUnavailable
+      ? []
     : ((await getLocalDatabase())
         .prepare(
           "SELECT * FROM customer_accounts ORDER BY datetime(created_at) DESC",
@@ -349,6 +353,7 @@ export const getCustomerSessionRecord = async (
     );
     session = rows[0];
   } else {
+    if (localDatabaseUnavailable) return null;
     session = (await getLocalDatabase())
       .prepare("SELECT * FROM customer_sessions WHERE token_hash = ?")
       .get(tokenHash) as SessionRow | undefined;
@@ -368,6 +373,7 @@ export const deleteCustomerSessionRecord = async (tokenHash: string) => {
       { method: "DELETE", headers: { Prefer: "return=minimal" } },
     );
   } else {
+    if (localDatabaseUnavailable) return;
     const database = await getLocalDatabase();
     database
       .prepare("DELETE FROM customer_sessions WHERE token_hash = ?")
@@ -382,6 +388,7 @@ export const deleteCustomerSessionsForAccount = async (accountId: string) => {
       { method: "DELETE", headers: { Prefer: "return=minimal" } },
     );
   } else {
+    if (localDatabaseUnavailable) return;
     const database = await getLocalDatabase();
     database
       .prepare("DELETE FROM customer_sessions WHERE account_id = ?")
@@ -424,6 +431,7 @@ export const consumePasswordResetRecord = async (tokenHash: string) => {
     );
     row = rows[0];
   } else {
+    if (localDatabaseUnavailable) return null;
     row = (await getLocalDatabase())
       .prepare(
         `SELECT * FROM customer_password_resets
