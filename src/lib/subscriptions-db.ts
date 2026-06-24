@@ -3,6 +3,7 @@ import "server-only";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
+import { SubscriptionError } from "@/lib/subscriptions/errors";
 import type {
   StoredSubscription,
   SubscriptionAddress,
@@ -77,8 +78,10 @@ const globalDatabase = globalThis as typeof globalThis & {
 };
 
 const databaseConfigurationError = () =>
-  new Error(
-    "Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY na Vercel para usar assinaturas.",
+  new SubscriptionError(
+    "O banco online da loja não está configurado na Vercel. Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY para salvar assinaturas.",
+    "NOT_CONFIGURED",
+    503,
   );
 
 const getLocalDatabase = async () => {
