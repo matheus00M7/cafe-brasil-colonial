@@ -113,6 +113,20 @@ const mercadoPagoErrorDetail = (paymentError: unknown) => {
 const mercadoPagoErrorMessage = (paymentError: unknown) => {
   const normalized = mercadoPagoErrorText(paymentError);
   if (
+    normalized.includes("banco online") ||
+    normalized.includes("supabase")
+  ) {
+    return "O banco online da loja não está configurado na Vercel. Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY antes de testar assinaturas no site publicado.";
+  }
+  if (
+    normalized.includes("not_configured") ||
+    normalized.includes("credenciais") ||
+    normalized.includes("configurad") ||
+    normalized.includes("access token")
+  ) {
+    return "O Mercado Pago está sem credenciais completas no servidor. Configure o MERCADO_PAGO_ACCESS_TOKEN na Vercel usando o Access Token da mesma aplicação da Public Key e faça um novo deploy.";
+  }
+  if (
     normalized.includes("unauthorized") ||
     normalized.includes("not authorized") ||
     normalized.includes("não autorizou") ||
@@ -490,7 +504,7 @@ export function SubscriptionCheckout({
               <label className="text-sm font-bold">
                 E-mail
                 <input
-                  id="subscription-cardholder-email"
+                  id="subscription-customer-email"
                   type="email"
                   value={customer.email}
                   onChange={(event) =>
@@ -636,6 +650,14 @@ export function SubscriptionCheckout({
                   placeholder="Somente números"
                 />
               </label>
+              <input
+                id="subscription-cardholder-email"
+                type="email"
+                value={isTestMode ? "test_payer@testuser.com" : customer.email}
+                readOnly
+                className="hidden"
+                tabIndex={-1}
+              />
               <select
                 id="subscription-card-issuer"
                 aria-hidden="true"
