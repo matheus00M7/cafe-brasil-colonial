@@ -20,7 +20,7 @@ const errorResponse = (error: unknown) => {
     error: normalized.message,
     code: normalized.code,
   };
-  if (process.env.NODE_ENV !== "production" && normalized.detail) {
+  if (normalized.detail) {
     body.detail = normalized.detail;
   }
   return NextResponse.json(body, { status: normalized.status });
