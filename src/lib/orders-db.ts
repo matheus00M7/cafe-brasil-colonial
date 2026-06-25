@@ -57,6 +57,8 @@ type ProductSettingsRow = {
   updated_at: string;
 };
 
+const TEMPORARY_TEST_PRODUCT_PRICE = 1;
+
 type ContentSettingsRow = {
   setting_key: string;
   content_json: string | SiteContent;
@@ -588,7 +590,7 @@ export const getAdminProducts = async (): Promise<AdminProduct[]> => {
       ...savedContent,
       id: product.id,
       slug: product.slug,
-      price: saved ? Number(saved.price) : product.price,
+      price: TEMPORARY_TEST_PRODUCT_PRICE,
       active: saved ? Boolean(saved.active) : true,
       stock: saved?.stock ?? null,
       adminFeatured: saved ? Boolean(saved.featured) : Boolean(product.featured),
