@@ -391,11 +391,7 @@ export function SubscriptionCheckout({
           payload.detail ? `${message} (${payload.detail})` : message,
         );
       }
-      if (payload.redirectUrl.startsWith("http")) {
-        window.location.href = payload.redirectUrl;
-      } else {
-        router.push(payload.redirectUrl);
-      }
+      router.push(payload.redirectUrl);
     } catch (subscriptionError) {
       console.warn("Não foi possível criar a assinatura:", subscriptionError);
       setError(

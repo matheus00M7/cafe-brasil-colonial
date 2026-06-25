@@ -8,7 +8,6 @@ import {
   updateSubscriptionRecord,
 } from "@/lib/subscriptions-db";
 import {
-  createPendingProviderSubscription,
   createProviderSubscription,
   getProviderSubscription,
   updateProviderSubscription,
@@ -42,15 +41,6 @@ const saveProviderState = async (
     nextPaymentDate: provider.next_payment_date || null,
     lastError: "",
   });
-
-const isCardTokenServiceError = (error: SubscriptionError) => {
-  const detail = `${error.detail || error.message}`.toLowerCase();
-  return (
-    error.code === "PROVIDER_REJECTED" &&
-    (detail.includes("card token service not found") ||
-      detail.includes("token service not found"))
-  );
-};
 
 export const createSubscription = async (
   payload: CreateSubscriptionPayload,
@@ -104,66 +94,6 @@ export const createSubscription = async (
       status: normalized.status,
       detail: normalized.detail || normalized.message,
     });
-
-    if (isCardTokenServiceError(normalized)) {
-      await createAppLog({
-        level: "warn",
-        area: "assinaturas",
-        event: "subscription_authorized_fallback_to_pending",
-        message:
-          "Token do cartão recusado pelo Mercado Pago. Criando assinatura pendente com link oficial de pagamento.",
-        entityType: "subscription",
-        entityId: localId,
-        details: {
-          code: normalized.code,
-          detail: normalized.detail || normalized.message,
-          planId: input.plan.id,
-          optionId: input.option.id,
-          amount: input.option.amount,
-          frequencyMonths: input.frequencyMonths,
-        },
-      });
-
-      try {
-        const pendingProvider = await createPendingProviderSubscription({
-          localId,
-          reason: `${input.plan.name} - ${input.option.label}`,
-          customerEmail: input.customer.email,
-          amount: input.option.amount,
-          frequencyMonths: input.frequencyMonths,
-          managementToken,
-        });
-        await saveProviderState(localId, pendingProvider, input.paymentMethodId);
-
-        return {
-          subscriptionId: localId,
-          status: pendingProvider.status,
-          redirectUrl:
-            pendingProvider.init_point ||
-            `/assinatura/sucesso?id=${localId}&token=${encodeURIComponent(
-              managementToken,
-            )}`,
-        };
-      } catch (pendingError) {
-        const pendingNormalized = normalizeSubscriptionError(pendingError);
-        await createAppLog({
-          level: pendingNormalized.status >= 500 ? "error" : "warn",
-          area: "assinaturas",
-          event: "subscription_pending_fallback_failed",
-          message:
-            "Também não foi possível criar a assinatura pendente no Mercado Pago.",
-          entityType: "subscription",
-          entityId: localId,
-          details: {
-            code: pendingNormalized.code,
-            status: pendingNormalized.status,
-            detail: pendingNormalized.detail || pendingNormalized.message,
-            planId: input.plan.id,
-            optionId: input.option.id,
-          },
-        });
-      }
-    }
 
     await createAppLog({
       level: normalized.status >= 500 ? "error" : "warn",
