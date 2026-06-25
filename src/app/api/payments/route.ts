@@ -7,6 +7,7 @@ import { getOrderById, updateOrderPayment } from "@/lib/orders-db";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getCustomerSession } from "@/lib/customer-auth";
 import { assertSameOrigin } from "@/lib/request-security";
+import { createAppLog } from "@/lib/app-logs";
 
 export const runtime = "nodejs";
 
@@ -87,6 +88,17 @@ export async function POST(request: NextRequest) {
         ? error.message
         : "Não foi possível processar o pagamento.";
     const configurationError = message.includes("Access Token");
+    await createAppLog({
+      level: configurationError ? "error" : "warn",
+      area: "pagamentos",
+      event: "payment_create_failed",
+      message: "Falha ao processar pagamento.",
+      requestPath: request.nextUrl.pathname,
+      details: {
+        message,
+        configurationError,
+      },
+    });
     return NextResponse.json(
       { error: message },
       { status: configurationError ? 503 : 400 },

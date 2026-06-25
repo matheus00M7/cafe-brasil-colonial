@@ -148,5 +148,30 @@ create index if not exists subscriptions_customer_account_idx
 
 alter table public.subscriptions enable row level security;
 
+create table if not exists public.app_logs (
+  id uuid primary key,
+  level text not null check (level in ('debug', 'info', 'warn', 'error')),
+  area text not null,
+  event text not null,
+  message text not null,
+  details_json jsonb not null default '{}'::jsonb,
+  entity_type text,
+  entity_id text,
+  request_path text,
+  request_id text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists app_logs_created_at_idx
+  on public.app_logs(created_at desc);
+create index if not exists app_logs_level_idx
+  on public.app_logs(level);
+create index if not exists app_logs_area_idx
+  on public.app_logs(area);
+create index if not exists app_logs_entity_idx
+  on public.app_logs(entity_type, entity_id);
+
+alter table public.app_logs enable row level security;
+
 -- Nenhuma política pública é criada. O projeto acessa esta tabela somente no
 -- servidor com a SUPABASE_SERVICE_ROLE_KEY, que nunca deve ir para o navegador.

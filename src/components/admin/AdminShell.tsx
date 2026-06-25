@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Boxes,
+  Bug,
   ExternalLink,
   LayoutDashboard,
   LogOut,
@@ -25,6 +26,7 @@ const navigation = [
   { label: "Pedidos", href: "/admin/pedidos", icon: PackageCheck },
   { label: "Assinaturas", href: "/admin/assinaturas", icon: Repeat2 },
   { label: "Clientes", href: "/admin/clientes", icon: Users },
+  { label: "Logs", href: "/admin/logs", icon: Bug },
   { label: "Produtos", href: "/admin/produtos", icon: Boxes },
   { label: "Conteúdo da loja", href: "/admin/conteudo", icon: PanelsTopLeft },
   { label: "Configurações", href: "/admin/configuracoes", icon: Settings },

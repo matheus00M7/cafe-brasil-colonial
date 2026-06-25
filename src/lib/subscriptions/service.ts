@@ -21,6 +21,7 @@ import {
   validateCreateSubscription,
   type CreateSubscriptionPayload,
 } from "@/lib/subscriptions/validation";
+import { createAppLog } from "@/lib/app-logs";
 
 const subscriptionNumber = () =>
   `ASS-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${randomUUID()
@@ -92,6 +93,23 @@ export const createSubscription = async (
       code: normalized.code,
       status: normalized.status,
       detail: normalized.detail || normalized.message,
+    });
+    await createAppLog({
+      level: normalized.status >= 500 ? "error" : "warn",
+      area: "assinaturas",
+      event: "subscription_create_failed",
+      message: "Falha ao criar assinatura no Mercado Pago.",
+      entityType: "subscription",
+      entityId: localId,
+      details: {
+        code: normalized.code,
+        status: normalized.status,
+        detail: normalized.detail || normalized.message,
+        planId: input.plan.id,
+        optionId: input.option.id,
+        amount: input.option.amount,
+        frequencyMonths: input.frequencyMonths,
+      },
     });
     await updateSubscriptionRecord(localId, {
       status: "error",

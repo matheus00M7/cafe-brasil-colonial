@@ -7,6 +7,7 @@ import {
 } from "@/lib/subscriptions/errors";
 import type { CreateSubscriptionPayload } from "@/lib/subscriptions/validation";
 import { getCustomerSession } from "@/lib/customer-auth";
+import { createAppLog } from "@/lib/app-logs";
 
 export const runtime = "nodejs";
 
@@ -51,6 +52,19 @@ export async function POST(request: NextRequest) {
       },
     );
   } catch (error) {
+    const normalized = normalizeSubscriptionError(error);
+    await createAppLog({
+      level: normalized.status >= 500 ? "error" : "warn",
+      area: "assinaturas",
+      event: "subscription_api_failed",
+      message: "A API de assinatura retornou erro.",
+      requestPath: request.nextUrl.pathname,
+      details: {
+        code: normalized.code,
+        status: normalized.status,
+        detail: normalized.detail || normalized.message,
+      },
+    });
     return errorResponse(error);
   }
 }

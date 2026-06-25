@@ -10,6 +10,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { getCustomerSession } from "@/lib/customer-auth";
 import { updateCustomerDetails } from "@/lib/customer-db";
 import { assertSameOrigin } from "@/lib/request-security";
+import { createAppLog } from "@/lib/app-logs";
 
 export const runtime = "nodejs";
 
@@ -95,6 +96,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Não foi possível criar o pedido.";
+    await createAppLog({
+      level: "warn",
+      area: "checkout",
+      event: "checkout_session_failed",
+      message: "Falha ao criar pedido no checkout.",
+      requestPath: request.nextUrl.pathname,
+      details: { message },
+    });
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
