@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
+import { createAppLog } from "@/lib/app-logs";
 import { SubscriptionError } from "@/lib/subscriptions/errors";
 
 export type MercadoPagoSubscription = {
@@ -35,6 +37,16 @@ const apiUrl = (
   process.env.MERCADO_PAGO_API_URL || "https://api.mercadopago.com"
 ).replace(/\/$/, "");
 
+const safeFingerprint = (value: string) =>
+  value ? createHash("sha256").update(value).digest("hex").slice(0, 12) : "";
+
+const credentialKind = (value: string) =>
+  value.startsWith("TEST-")
+    ? "test"
+    : value.startsWith("APP_USR-")
+      ? "production"
+      : "unknown";
+
 const getConfiguration = () => {
   const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN?.trim() || "";
   const publicKey =
@@ -65,7 +77,11 @@ const getConfiguration = () => {
 
   return {
     accessToken,
+    accessTokenKind: credentialKind(accessToken),
+    accessTokenFingerprint: safeFingerprint(accessToken),
     isTest: tokenIsTest,
+    publicKeyKind: credentialKind(publicKey),
+    publicKeyFingerprint: safeFingerprint(publicKey),
     testPayerEmail:
       process.env.MERCADO_PAGO_TEST_PAYER_EMAIL?.trim() ||
       "test_payer@testuser.com",
@@ -90,6 +106,38 @@ const technicalMessage = (payload: MercadoPagoErrorPayload) =>
 
 const technicalCode = (payload: MercadoPagoErrorPayload) =>
   String(payload.cause?.[0]?.code || payload.error || "");
+
+const logProviderFailure = async ({
+  path,
+  scope,
+  response,
+  payload,
+}: {
+  path: string;
+  scope: ScopeMode;
+  response: Response;
+  payload: MercadoPagoErrorPayload;
+}) => {
+  const configuration = getConfiguration();
+  await createAppLog({
+    level: response.status >= 500 ? "error" : "warn",
+    area: "assinaturas",
+    event: "mercado_pago_subscription_provider_failed",
+    message: "Chamada de assinatura ao Mercado Pago falhou.",
+    details: {
+      path,
+      scope,
+      httpStatus: response.status,
+      providerCode: technicalCode(payload),
+      providerDetail: technicalMessage(payload),
+      testScopePreference: getTestScopePreference(),
+      accessTokenKind: configuration.accessTokenKind,
+      accessTokenFingerprint: configuration.accessTokenFingerprint,
+      publicKeyKind: configuration.publicKeyKind,
+      publicKeyFingerprint: configuration.publicKeyFingerprint,
+    },
+  });
+};
 
 const providerError = (
   response: Response,
@@ -167,15 +215,18 @@ const request = async <T>(
   }
 
   const payload = await readPayload(response);
-  if (!response.ok) throw providerError(response, payload);
+  if (!response.ok) {
+    await logProviderFailure({ path, scope, response, payload });
+    throw providerError(response, payload);
+  }
   return payload as T;
 };
 
 const getTestScopePreference = () => {
   const configured =
     process.env.MERCADO_PAGO_SUBSCRIPTIONS_TEST_SCOPE?.toLowerCase();
-  if (configured === "default" || configured === "stage") return configured;
-  return "auto";
+  if (configured === "stage") return configured;
+  return "default";
 };
 
 const shouldRetryWithoutStage = (error: unknown) => {
