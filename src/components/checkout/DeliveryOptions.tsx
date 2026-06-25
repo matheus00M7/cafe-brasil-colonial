@@ -8,7 +8,7 @@ const options = [
   {
     value: "correios",
     title: "Correios",
-    text: "Frete e prazo confirmados pelo CEP.",
+    text: "Frete grátis durante os testes de pagamento.",
     icon: Truck,
   },
   {

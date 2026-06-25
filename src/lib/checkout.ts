@@ -1,5 +1,4 @@
 import { getAdminProducts } from "@/lib/orders-db";
-import { getSiteContent } from "@/lib/orders-db";
 import type { CheckoutCartItem, CheckoutData } from "@/types/checkout";
 import type { StoredOrderItem } from "@/types/order";
 
@@ -98,15 +97,11 @@ export const calculateOrderTotals = async (
   items: StoredOrderItem[],
   deliveryMethod: CheckoutData["deliveryMethod"],
 ) => {
+  void deliveryMethod;
   const subtotal = Number(
     items.reduce((sum, item) => sum + item.total, 0).toFixed(2),
   );
-  const content = await getSiteContent();
-  const shipping =
-    deliveryMethod === "retirada" ||
-    subtotal >= content.commerce.freeShippingThreshold
-      ? 0
-      : content.commerce.standardShippingPrice;
+  const shipping = 0;
   const total = Number((subtotal + shipping).toFixed(2));
   return { subtotal, shipping, total };
 };
