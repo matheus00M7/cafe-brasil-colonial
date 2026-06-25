@@ -576,7 +576,7 @@ export function ContentAdminEditor({
                 }))
               }
             />
-            <div className="lg:col-span-2">
+            <div className="hidden lg:col-span-2">
               <div className="rounded-3xl border border-brand-brown/10 bg-brand-mist/45 p-5">
                 <h3 className="text-lg font-extrabold text-brand-brown">
                   Preços das assinaturas

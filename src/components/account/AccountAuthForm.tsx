@@ -5,13 +5,20 @@ import { useState, type FormEvent } from "react";
 import { Eye, EyeOff, LoaderCircle, LockKeyhole } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import {
+  customerAuthUrl,
+  normalizeCustomerRedirect,
+} from "@/lib/customer-redirect";
 
 export function AccountAuthForm({
   mode,
+  redirectTo = "/minha-conta",
 }: {
   mode: "login" | "signup";
+  redirectTo?: string;
 }) {
   const isSignup = mode === "signup";
+  const safeRedirect = normalizeCustomerRedirect(redirectTo);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -42,7 +49,7 @@ export function AccountAuthForm({
       if (!response.ok) {
         throw new Error(payload.error || "Não foi possível continuar.");
       }
-      window.location.href = payload.redirectUrl || "/minha-conta";
+      window.location.href = safeRedirect || payload.redirectUrl || "/minha-conta";
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -156,7 +163,7 @@ export function AccountAuthForm({
       <p className="text-center text-sm text-brand-ink/55">
         {isSignup ? "Já possui uma conta?" : "Ainda não possui uma conta?"}{" "}
         <Link
-          href={isSignup ? "/entrar" : "/cadastro"}
+          href={customerAuthUrl(isSignup ? "/entrar" : "/cadastro", safeRedirect)}
           className="font-extrabold text-brand-brown hover:underline"
         >
           {isSignup ? "Entrar" : "Criar conta"}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { CheckoutForm } from "@/components/checkout/CheckoutForm";
 import { getCustomerSession } from "@/lib/customer-auth";
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
 
 export default async function CheckoutPage() {
   const session = await getCustomerSession();
-  const account = session?.account;
+  if (!session) redirect("/entrar?redirect=/checkout");
+
+  const account = session.account;
   return (
     <section className="py-12 sm:py-20">
       <Container>
@@ -26,26 +29,22 @@ export default async function CheckoutPage() {
           cartão ou boleto sem sair do site.
         </p>
         <CheckoutForm
-          signedIn={Boolean(account)}
-          initialData={
-            account
-              ? {
-                  fullName: account.profile.fullName,
-                  whatsapp: account.profile.whatsapp,
-                  email: account.email,
-                  cpf: account.profile.cpf,
-                  cep: account.address.cep,
-                  street: account.address.street,
-                  number: account.address.number,
-                  complement: account.address.complement,
-                  neighborhood: account.address.neighborhood,
-                  city: account.address.city,
-                  state: account.address.state,
-                  deliveryMethod: "correios",
-                  notes: "",
-                }
-              : undefined
-          }
+          signedIn
+          initialData={{
+            fullName: account.profile.fullName,
+            whatsapp: account.profile.whatsapp,
+            email: account.email,
+            cpf: account.profile.cpf,
+            cep: account.address.cep,
+            street: account.address.street,
+            number: account.address.number,
+            complement: account.address.complement,
+            neighborhood: account.address.neighborhood,
+            city: account.address.city,
+            state: account.address.state,
+            deliveryMethod: "correios",
+            notes: "",
+          }}
         />
       </Container>
     </section>

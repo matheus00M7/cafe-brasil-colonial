@@ -112,7 +112,13 @@ export function CheckoutForm({
       });
       const payload = (await response.json()) as CheckoutSessionResponse & {
         error?: string;
+        redirectUrl?: string;
       };
+
+      if (response.status === 401 && payload.redirectUrl) {
+        window.location.href = payload.redirectUrl;
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(payload.error || "Não foi possível criar o pedido.");

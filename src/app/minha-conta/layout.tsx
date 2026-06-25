@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
-import { CalendarCheck, LockKeyhole, MapPin, PackageSearch } from "lucide-react";
+import { LockKeyhole, MapPin, PackageSearch } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { LogoutButton } from "@/components/account/LogoutButton";
 import { getCustomerSession } from "@/lib/customer-auth";
@@ -36,14 +36,9 @@ export default async function AccountLayout({
           </div>
           <LogoutButton />
         </div>
-        <nav className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <nav className="mb-8 grid gap-3 sm:grid-cols-3">
           {[
             [PackageSearch, "Meus pedidos", "/minha-conta"],
-            [
-              CalendarCheck,
-              "Minhas assinaturas",
-              "/minha-conta/assinaturas",
-            ],
             [MapPin, "Meus dados", "/minha-conta/dados"],
             [LockKeyhole, "Segurança", "/minha-conta/seguranca"],
           ].map(([Icon, label, href]) => (

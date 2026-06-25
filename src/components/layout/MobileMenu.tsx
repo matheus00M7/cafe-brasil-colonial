@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/Button";
 const links = [
   ["Início", "/"],
   ["Produtos", "/produtos"],
-  ["Assinatura", "/assinatura"],
   ["Nossa História", "/nossa-historia"],
   ["Origem", "/origem"],
   ["Atacado", "/atacado"],

@@ -13,7 +13,6 @@ import {
   Menu,
   PackageCheck,
   PanelsTopLeft,
-  Repeat2,
   Settings,
   Users,
   X,
@@ -24,7 +23,6 @@ import { useSiteContent } from "@/context/SiteContentContext";
 const navigation = [
   { label: "Visão geral", href: "/admin", icon: LayoutDashboard },
   { label: "Pedidos", href: "/admin/pedidos", icon: PackageCheck },
-  { label: "Assinaturas", href: "/admin/assinaturas", icon: Repeat2 },
   { label: "Clientes", href: "/admin/clientes", icon: Users },
   { label: "Logs", href: "/admin/logs", icon: Bug },
   { label: "Produtos", href: "/admin/produtos", icon: Boxes },

@@ -9,7 +9,6 @@ import { useSiteContent } from "@/context/SiteContentContext";
 
 const links = [
   ["Produtos", "/produtos"],
-  ["Assinatura", "/assinatura"],
   ["Nossa História", "/nossa-historia"],
   ["Origem", "/origem"],
   ["Atacado", "/atacado"],

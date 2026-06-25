@@ -63,7 +63,9 @@ export async function POST(request: NextRequest) {
         paymentId: order.paymentId,
         status: order.paymentStatus,
         statusDetail: order.paymentStatusDetail,
-        redirectUrl: `/pedido/${order.id}`,
+        redirectUrl: order.customerAccountId
+          ? `/minha-conta/pedidos/${order.id}`
+          : `/pedido/${order.id}`,
       });
     }
 
@@ -80,7 +82,9 @@ export async function POST(request: NextRequest) {
       paymentId: String(payment.id),
       status: payment.status,
       statusDetail: payment.status_detail || "",
-      redirectUrl: `/pedido/${order.id}`,
+      redirectUrl: order.customerAccountId
+        ? `/minha-conta/pedidos/${order.id}`
+        : `/pedido/${order.id}`,
     });
   } catch (error) {
     const message =

@@ -4,6 +4,7 @@ import { Database, ShieldCheck, ShoppingBag } from "lucide-react";
 import { AccountAuthForm } from "@/components/account/AccountAuthForm";
 import { Container } from "@/components/ui/Container";
 import { getCustomerSession } from "@/lib/customer-auth";
+import { normalizeCustomerRedirect } from "@/lib/customer-redirect";
 
 export const metadata: Metadata = {
   title: "Criar conta",
@@ -11,8 +12,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function SignupPage() {
-  if (await getCustomerSession()) redirect("/minha-conta");
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string | string[] }>;
+}) {
+  const { redirect: redirectParam } = await searchParams;
+  const redirectTo = normalizeCustomerRedirect(redirectParam);
+
+  if (await getCustomerSession()) redirect(redirectTo);
   return (
     <section className="py-12 sm:py-20">
       <Container className="grid items-start gap-8 lg:grid-cols-[1fr_540px]">
@@ -51,7 +59,7 @@ export default async function SignupPage() {
           <p className="mb-7 mt-2 text-sm text-brand-ink/55">
             O cadastro leva menos de um minuto.
           </p>
-          <AccountAuthForm mode="signup" />
+          <AccountAuthForm mode="signup" redirectTo={redirectTo} />
         </div>
       </Container>
     </section>

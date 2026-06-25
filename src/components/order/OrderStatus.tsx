@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { PublicOrder } from "@/types/order";
 import { formatCurrency } from "@/lib/formatCurrency";
+import { fulfillmentStatusLabels } from "@/lib/order-labels";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
@@ -90,6 +91,7 @@ const statusContent = {
 export function OrderStatus({ initialOrder }: { initialOrder: PublicOrder }) {
   const [order, setOrder] = useState(initialOrder);
   const [copied, setCopied] = useState(false);
+  const [trackingCopied, setTrackingCopied] = useState(false);
   const isTestPayment =
     process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY?.startsWith("TEST-");
   const status =
@@ -120,6 +122,13 @@ export function OrderStatus({ initialOrder }: { initialOrder: PublicOrder }) {
     window.setTimeout(() => setCopied(false), 2000);
   };
 
+  const copyTracking = async () => {
+    if (!order.trackingCode) return;
+    await navigator.clipboard.writeText(order.trackingCode);
+    setTrackingCopied(true);
+    window.setTimeout(() => setTrackingCopied(false), 2000);
+  };
+
   return (
     <div className="grid items-start gap-8 lg:grid-cols-[1fr_390px]">
       <div className="space-y-6">
@@ -143,6 +152,52 @@ export function OrderStatus({ initialOrder }: { initialOrder: PublicOrder }) {
             <p className="mt-5 inline-flex items-center gap-2 text-xs font-bold text-brand-ink/45">
               <RefreshCw className="h-4 w-4 animate-spin" />
               Verificando atualização do pagamento...
+            </p>
+          )}
+        </section>
+
+        <section className="rounded-4xl border border-brand-brown/10 bg-white p-6 shadow-card sm:p-8">
+          <div className="flex items-start gap-4">
+            <div className="rounded-2xl bg-brand-green/10 p-3 text-brand-green">
+              <PackageCheck className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brand-green">
+                Entrega
+              </p>
+              <h2 className="mt-1 text-2xl font-extrabold text-brand-brown">
+                {fulfillmentStatusLabels[order.fulfillmentStatus]}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-brand-ink/55">
+                Destino: {order.address.city}/{order.address.state}. Quando a
+                loja atualizar o preparo ou envio, essa página também atualiza.
+              </p>
+            </div>
+          </div>
+
+          {order.trackingCode ? (
+            <div className="mt-6 rounded-3xl border border-brand-green/20 bg-brand-green/5 p-5">
+              <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brand-green">
+                Código de rastreio
+              </p>
+              <p className="mt-2 break-all text-lg font-extrabold text-brand-brown">
+                {order.trackingCode}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={copyTracking}
+              >
+                <Copy className="h-4 w-4" />
+                {trackingCopied ? "Rastreio copiado" : "Copiar rastreio"}
+              </Button>
+            </div>
+          ) : (
+            <p className="mt-6 rounded-3xl bg-brand-mist p-5 text-sm leading-6 text-brand-ink/55">
+              O código de rastreio aparecerá aqui assim que a loja postar o
+              pedido.
             </p>
           )}
         </section>
