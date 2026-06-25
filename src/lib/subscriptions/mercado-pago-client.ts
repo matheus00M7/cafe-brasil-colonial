@@ -298,6 +298,42 @@ export const createProviderSubscription = async (input: {
   });
 };
 
+export const createPendingProviderSubscription = async (input: {
+  localId: string;
+  reason: string;
+  customerEmail: string;
+  amount: number;
+  frequencyMonths: number;
+  managementToken: string;
+}) => {
+  const { isTest, testPayerEmail } = getConfiguration();
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const body = {
+    reason: input.reason,
+    external_reference: input.localId,
+    payer_email: isTest ? testPayerEmail : input.customerEmail,
+    auto_recurring: {
+      frequency: input.frequencyMonths,
+      frequency_type: "months",
+      transaction_amount: Number(input.amount.toFixed(2)),
+      currency_id: "BRL",
+    },
+    back_url: `${siteUrl}/assinatura/sucesso?id=${
+      input.localId
+    }&token=${encodeURIComponent(input.managementToken)}`,
+    notification_url: siteUrl.startsWith("https://")
+      ? `${siteUrl}/api/webhooks/mercado-pago`
+      : undefined,
+    status: "pending",
+  };
+
+  return requestWithEnvironment<MercadoPagoSubscription>("/preapproval", {
+    method: "POST",
+    headers: { "X-Idempotency-Key": `${input.localId}-pending` },
+    body: JSON.stringify(body),
+  });
+};
+
 export const getProviderSubscription = (id: string) =>
   requestWithEnvironment<MercadoPagoSubscription>(
     `/preapproval/${encodeURIComponent(id)}`,

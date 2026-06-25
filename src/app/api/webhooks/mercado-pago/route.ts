@@ -15,9 +15,16 @@ import { createAppLog } from "@/lib/app-logs";
 
 export const runtime = "nodejs";
 
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    service: "mercado-pago-webhook",
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const payload = (await request.json()) as {
+    const payload = (await request.json().catch(() => ({}))) as {
       type?: string;
       action?: string;
       data?: { id?: string | number };
