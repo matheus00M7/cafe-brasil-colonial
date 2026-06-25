@@ -178,6 +178,17 @@ const getTestScopePreference = () => {
   return "auto";
 };
 
+const shouldRetryWithoutStage = (error: unknown) => {
+  if (!(error instanceof SubscriptionError)) return false;
+  const detail = `${error.code} ${error.detail || error.message}`.toLowerCase();
+  return (
+    error.code === "PROVIDER_UNAUTHORIZED" ||
+    error.code === "PROVIDER_UNAVAILABLE" ||
+    detail.includes("card token service not found") ||
+    detail.includes("token service not found")
+  );
+};
+
 const requestWithEnvironment = async <T>(
   path: string,
   init: RequestInit,
@@ -186,16 +197,12 @@ const requestWithEnvironment = async <T>(
   if (!isTest) return request<T>(path, init, "default");
 
   const preference = getTestScopePreference();
-  if (preference !== "auto") return request<T>(path, init, preference);
+  if (preference === "default") return request<T>(path, init, "default");
 
   try {
     return await request<T>(path, init, "stage");
   } catch (error) {
-    if (
-      error instanceof SubscriptionError &&
-      (error.code === "PROVIDER_UNAUTHORIZED" ||
-        error.code === "PROVIDER_UNAVAILABLE")
-    ) {
+    if (shouldRetryWithoutStage(error)) {
       return request<T>(path, init, "default");
     }
     throw error;
