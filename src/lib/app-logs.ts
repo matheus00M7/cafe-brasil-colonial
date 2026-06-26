@@ -289,3 +289,20 @@ export const listAppLogs = async (
     ];
   }
 };
+
+export const clearAppLogs = async () => {
+  if (useSupabase) {
+    await supabaseRequest<void>("app_logs?id=not.is.null", {
+      method: "DELETE",
+      headers: { Prefer: "return=minimal" },
+    });
+    return;
+  }
+
+  if (localDatabaseUnavailable) {
+    throw new Error("Banco online não configurado para limpar logs.");
+  }
+
+  const database = await getLocalDatabase();
+  database.prepare("DELETE FROM app_logs").run();
+};

@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { AlertTriangle, Bug, Info, ShieldCheck } from "lucide-react";
-import { listAppLogs } from "@/lib/app-logs";
+import { ClearLogsButton } from "@/components/admin/ClearLogsButton";
+import { getAdminSession } from "@/lib/admin-auth";
+import { clearAppLogs, listAppLogs } from "@/lib/app-logs";
 import type { AppLogLevel } from "@/types/app-log";
 
 const levelLabels: Record<AppLogLevel, string> = {
@@ -38,12 +42,45 @@ const stringifyDetails = (details: Record<string, unknown>) =>
 const filterHref = (level?: AppLogLevel | "all") =>
   level && level !== "all" ? `/admin/logs?level=${level}` : "/admin/logs";
 
+async function clearLogsAction(formData: FormData) {
+  "use server";
+
+  const session = await getAdminSession();
+  if (!session) redirect("/admin/login");
+
+  const currentLevel = String(formData.get("level") || "all");
+  const basePath = filterHref(
+    ["debug", "info", "warn", "error"].includes(currentLevel)
+      ? (currentLevel as AppLogLevel)
+      : "all",
+  );
+
+  try {
+    await clearAppLogs();
+    revalidatePath("/admin/logs");
+  } catch {
+    const separator = basePath.includes("?") ? "&" : "?";
+    redirect(`${basePath}${separator}clearError=1`);
+  }
+
+  const separator = basePath.includes("?") ? "&" : "?";
+  redirect(`${basePath}${separator}cleared=1`);
+}
+
 export default async function AdminLogsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ level?: string }>;
+  searchParams: Promise<{
+    level?: string;
+    cleared?: string;
+    clearError?: string;
+  }>;
 }) {
-  const { level: levelParam } = await searchParams;
+  const {
+    level: levelParam,
+    cleared: clearedParam,
+    clearError: clearErrorParam,
+  } = await searchParams;
   const selectedLevel = ["debug", "info", "warn", "error"].includes(
     levelParam || "",
   )
@@ -52,6 +89,7 @@ export default async function AdminLogsPage({
   const logs = await listAppLogs({ level: selectedLevel, limit: 120 });
   const errorCount = logs.filter((log) => log.level === "error").length;
   const warnCount = logs.filter((log) => log.level === "warn").length;
+  const hasPersistedLogs = logs.some((log) => log.id !== "logs-unavailable");
 
   return (
     <div>
@@ -74,6 +112,7 @@ export default async function AdminLogsPage({
             </p>
           </div>
         </div>
+        <div className="w-full max-w-sm space-y-3">
         <div className="rounded-3xl border border-brand-brown/10 bg-white p-4 text-sm shadow-card">
           <div className="flex items-center gap-2 font-extrabold text-brand-green">
             <ShieldCheck className="h-5 w-5" />
@@ -84,7 +123,29 @@ export default async function AdminLogsPage({
             detalhes.
           </p>
         </div>
+          <ClearLogsButton
+            action={clearLogsAction}
+            disabled={!hasPersistedLogs}
+            level={selectedLevel}
+          />
+          <p className="px-1 text-xs font-bold text-brand-ink/45">
+            Apaga todos os eventos salvos no painel de logs.
+          </p>
+        </div>
       </div>
+
+      {clearedParam ? (
+        <div className="mt-6 rounded-3xl border border-green-200 bg-green-50 p-4 text-sm font-bold text-green-800">
+          Eventos apagados com sucesso.
+        </div>
+      ) : null}
+
+      {clearErrorParam ? (
+        <div className="mt-6 rounded-3xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-800">
+          Não foi possível apagar os eventos agora. Confira se a tabela de logs
+          existe no Supabase e tente novamente.
+        </div>
+      ) : null}
 
       <section className="mt-8 grid gap-4 sm:grid-cols-3">
         {[
