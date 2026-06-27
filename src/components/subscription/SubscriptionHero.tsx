@@ -8,7 +8,7 @@ export function SubscriptionHero({ image }: { image: string }) {
   return (
     <section className="relative overflow-hidden bg-brand-glow py-14 sm:py-20 lg:py-24">
       <div
-        className="pointer-events-none absolute -bottom-44 -left-20 h-[540px] w-[540px] bg-[url('/brand/pattern-official.png')] bg-contain bg-no-repeat opacity-[0.05]"
+        className="pointer-events-none absolute -bottom-44 -left-20 h-[540px] w-[540px] bg-[url('/brand/hero-pattern-custom.png')] bg-[length:836px_auto] bg-repeat opacity-[0.05] [mask-image:radial-gradient(circle_at_center,black_0%,black_58%,transparent_100%)]"
         aria-hidden="true"
       />
       <Container className="relative grid items-center gap-12 lg:grid-cols-[1.05fr_.95fr]">

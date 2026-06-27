@@ -20,7 +20,7 @@ export function HeroSection({
   return (
     <section className="relative overflow-hidden bg-brand-glow py-12 sm:py-16 lg:py-20">
       <div
-        className="pointer-events-none absolute inset-0 bg-[url('/brand/pattern-seamless.png')] bg-[length:190px_148px] bg-left-top bg-repeat opacity-[0.045] [mask-image:linear-gradient(to_right,black_0%,black_40%,transparent_72%)]"
+        className="pointer-events-none absolute inset-0 bg-[url('/brand/hero-pattern-custom.png')] bg-[length:836px_auto] bg-left-top bg-repeat opacity-[0.055] [mask-image:linear-gradient(to_right,black_0%,black_40%,transparent_72%)]"
         aria-hidden="true"
       />
       <Container className="relative grid items-center gap-10 lg:grid-cols-[1.02fr_.98fr]">

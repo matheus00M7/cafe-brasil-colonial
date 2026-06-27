@@ -148,14 +148,23 @@ const emptyAddress = (): StoredAddress => ({
 
 const parseAccount = (row?: AccountRow): CustomerAccount | null => {
   if (!row) return null;
-  return {
-    id: row.id,
-    email: row.email,
-    profile: decryptCustomerData<CustomerProfile>(row.profile_cipher),
-    address: decryptCustomerData<StoredAddress>(row.address_cipher),
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
+  try {
+    return {
+      id: row.id,
+      email: row.email,
+      profile: decryptCustomerData<CustomerProfile>(row.profile_cipher),
+      address: decryptCustomerData<StoredAddress>(row.address_cipher),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  } catch (error) {
+    console.warn("[customer_accounts] não foi possível abrir os dados da conta", {
+      accountId: row.id,
+      email: row.email,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
 };
 
 export const createCustomerAccount = async (input: {
@@ -363,6 +372,7 @@ export const getCustomerSessionRecord = async (
     return null;
   }
   const account = await getCustomerAccountById(session.account_id);
+  if (!account) await deleteCustomerSessionRecord(tokenHash);
   return account ? { account, expiresAt: session.expires_at } : null;
 };
 

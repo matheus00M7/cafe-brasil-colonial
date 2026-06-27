@@ -39,7 +39,7 @@ export function PromoCarousel({ slides }: { slides: CarouselSlide[] }) {
           )}
         >
           <div
-            className="absolute inset-y-0 right-0 w-2/3 bg-[url('/brand/pattern-official.png')] bg-[length:440px] bg-repeat opacity-10"
+            className="absolute inset-y-0 right-0 w-2/3 bg-[url('/brand/hero-pattern-custom.png')] bg-[length:836px_auto] bg-repeat opacity-10 [mask-image:linear-gradient(to_left,black_0%,black_62%,transparent_100%)]"
             aria-hidden="true"
           />
           {slide.image && (

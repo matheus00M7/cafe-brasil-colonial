@@ -22,7 +22,7 @@ export function Footer() {
   return (
     <footer className="relative overflow-hidden bg-brand-brown py-16 text-white">
       <div
-        className="pointer-events-none absolute inset-y-0 right-0 w-2/3 bg-[url('/brand/pattern-official.png')] bg-[length:420px] bg-repeat opacity-[0.055]"
+        className="pointer-events-none absolute inset-y-0 right-0 w-2/3 bg-[url('/brand/hero-pattern-custom.png')] bg-[length:836px_auto] bg-repeat opacity-[0.055] [mask-image:linear-gradient(to_left,black_0%,black_62%,transparent_100%)]"
         aria-hidden="true"
       />
       <Container className="relative grid gap-12 lg:grid-cols-[1.3fr_.7fr_.8fr]">

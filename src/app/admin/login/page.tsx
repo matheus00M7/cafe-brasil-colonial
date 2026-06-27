@@ -43,7 +43,7 @@ export default async function AdminLoginPage() {
       </section>
       <section className="relative hidden overflow-hidden bg-brand-brown lg:block">
         <div
-          className="absolute inset-0 bg-[url('/brand/pattern-official.png')] bg-[length:420px] opacity-[0.09]"
+          className="absolute inset-0 bg-[url('/brand/hero-pattern-custom.png')] bg-[length:836px_auto] opacity-[0.09] [mask-image:radial-gradient(circle_at_center,black_0%,black_58%,transparent_100%)]"
           aria-hidden="true"
         />
         <div className="absolute inset-x-12 bottom-12 rounded-4xl border border-white/10 bg-white/5 p-8 text-white backdrop-blur-sm">
