@@ -62,8 +62,6 @@ type ProductSettingsRow = {
   updated_at: string;
 };
 
-const TEMPORARY_TEST_PRODUCT_PRICE = 1;
-
 type ProductContentSettings = Partial<Product> & {
   custom?: boolean;
   deleted?: boolean;
@@ -718,6 +716,7 @@ const toAdminProduct = (
 ): AdminProduct | null => {
   const savedContent = parseProductContent(row);
   if (savedContent.deleted) return null;
+  const savedPrice = row ? Number(row.price) : product.price;
 
   return {
     ...product,
@@ -729,7 +728,7 @@ const toAdminProduct = (
     sensoryNotes: normalizeNotes(
       savedContent.sensoryNotes || product.sensoryNotes,
     ),
-    price: TEMPORARY_TEST_PRODUCT_PRICE,
+    price: Number.isFinite(savedPrice) ? savedPrice : product.price,
     active: row ? Boolean(row.active) : true,
     stock: row?.stock ?? null,
     adminFeatured: row ? Boolean(row.featured) : Boolean(product.featured),
