@@ -13,7 +13,10 @@ const getSupabaseStorageBaseUrl = () => {
 };
 
 const storageHeaders = () => {
-  if (!supabaseKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY não configurada.");
+  if (!supabaseKey) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY não configurada.");
+  }
+
   return {
     apikey: supabaseKey,
     Authorization: `Bearer ${supabaseKey}`,
@@ -32,6 +35,16 @@ const redactStorageError = (message: string) =>
     .replace(/Bearer\s+[A-Za-z0-9._:-]{8,}/gi, "Bearer ***")
     .replace(/sb_secret_[A-Za-z0-9._:-]{8,}/g, "sb_secret_***")
     .slice(0, 500);
+
+const isBucketMissingError = (status: number, body: string) => {
+  const normalized = body.toLowerCase();
+  return (
+    status === 404 ||
+    normalized.includes("bucket not found") ||
+    body.includes('"statusCode":"404"') ||
+    body.includes('"statusCode":404')
+  );
+};
 
 export const hasSupabaseUploadStorage = () =>
   Boolean(getSupabaseStorageBaseUrl() && supabaseKey);
@@ -58,10 +71,11 @@ export const ensureUploadsBucket = async () => {
   const current = await storageRequest(`bucket/${uploadsBucket}`);
   if (current.ok) return;
 
-  if (current.status !== 404) {
+  const currentError = await current.text();
+  if (!isBucketMissingError(current.status, currentError)) {
     throw new Error(
       `Não foi possível verificar o bucket de imagens: ${redactStorageError(
-        await current.text(),
+        currentError,
       )}`,
     );
   }
@@ -87,10 +101,7 @@ export const ensureUploadsBucket = async () => {
   }
 };
 
-export const uploadImageToStorage = async (
-  file: File,
-  fileName: string,
-) => {
+export const uploadImageToStorage = async (file: File, fileName: string) => {
   await ensureUploadsBucket();
 
   const objectKey = `admin/${fileName}`;
