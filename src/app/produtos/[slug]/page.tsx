@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { products } from "@/data/products";
 import { getStoreProducts } from "@/lib/orders-db";
 import { ProductDetail } from "@/components/products/ProductDetail";
 import { RelatedProducts } from "@/components/products/RelatedProducts";
 
 export const dynamic = "force-dynamic";
-
-export const generateStaticParams = () =>
-  products.map((product) => ({ slug: product.slug }));
 
 export async function generateMetadata({
   params,

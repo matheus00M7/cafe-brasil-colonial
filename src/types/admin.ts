@@ -5,6 +5,7 @@ export type AdminProduct = Product & {
   stock: number | null;
   adminFeatured: boolean;
   updatedAt: string | null;
+  custom?: boolean;
 };
 
 export type ProductSettingsUpdate = {
@@ -14,7 +15,20 @@ export type ProductSettingsUpdate = {
   featured: boolean;
   name: string;
   image: string;
+  category: Product["category"];
+  type: string;
+  weight: string;
+  roast: string;
+  grind: string;
+  intensity: number;
+  intensityLabel: string;
   shortDescription: string;
   longDescription: string;
+  origin: string;
+  preparation: string;
+  sensoryNotes: string[];
+  contents: string;
   badge: string;
 };
+
+export type ProductSettingsCreate = ProductSettingsUpdate;

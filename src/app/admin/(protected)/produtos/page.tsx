@@ -1,9 +1,11 @@
 import { Boxes } from "lucide-react";
 import { getAdminProducts } from "@/lib/orders-db";
+import { CreateProductForm } from "@/components/admin/CreateProductForm";
 import { ProductAdminCard } from "@/components/admin/ProductAdminCard";
 
 export default async function AdminProductsPage() {
   const products = await getAdminProducts();
+
   return (
     <div>
       <div className="flex items-start gap-4">
@@ -19,11 +21,14 @@ export default async function AdminProductsPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-brand-ink/55">
             Altere nome, descrição, imagem, preço, estoque, destaque e
-            disponibilidade. As mudanças passam a valer na loja e no cálculo
-            seguro do checkout.
+            disponibilidade. Também é possível adicionar novos produtos e
+            excluir itens que não devem mais aparecer na loja.
           </p>
         </div>
       </div>
+
+      <CreateProductForm />
+
       <div className="mt-8 space-y-5">
         {products.map((product) => (
           <ProductAdminCard key={product.id} product={product} />

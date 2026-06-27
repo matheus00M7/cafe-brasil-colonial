@@ -14,8 +14,13 @@ import type {
   StoredOrderItem,
 } from "@/types/order";
 import type { DeliveryMethod } from "@/types/checkout";
-import type { AdminProduct, ProductSettingsUpdate } from "@/types/admin";
+import type {
+  AdminProduct,
+  ProductSettingsCreate,
+  ProductSettingsUpdate,
+} from "@/types/admin";
 import type { SiteContent } from "@/types/site-content";
+import type { Product, ProductCategory } from "@/types/product";
 import { products } from "@/data/products";
 import { defaultSiteContent } from "@/data/site-content";
 
@@ -58,6 +63,128 @@ type ProductSettingsRow = {
 };
 
 const TEMPORARY_TEST_PRODUCT_PRICE = 1;
+
+type ProductContentSettings = Partial<Product> & {
+  custom?: boolean;
+  deleted?: boolean;
+};
+
+const PRODUCT_CATEGORIES: ProductCategory[] = [
+  "Tradicional",
+  "Extraforte",
+  "Gourmet",
+  "Especial",
+  "Kits",
+];
+
+const fallbackProductImage = "/products/tradicional-500g.webp";
+
+const normalizeText = (value: unknown, fallback = "", maxLength = 500) => {
+  const text = typeof value === "string" ? value.trim() : fallback;
+  return text.slice(0, maxLength);
+};
+
+const normalizeCategory = (value: unknown): ProductCategory =>
+  PRODUCT_CATEGORIES.includes(value as ProductCategory)
+    ? (value as ProductCategory)
+    : "Tradicional";
+
+const normalizeIntensity = (value: unknown) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 5;
+  return Math.min(Math.max(Math.round(number), 1), 10);
+};
+
+const normalizeNotes = (value: unknown): string[] => {
+  const items = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(/[,;\n]/)
+      : [];
+  const normalized = items
+    .map((item) => normalizeText(item, "", 80))
+    .filter(Boolean);
+  return normalized.length ? normalized.slice(0, 8) : ["Café selecionado"];
+};
+
+const slugifyProduct = (value: string) => {
+  const slug = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  return slug || `produto-${Date.now()}`;
+};
+
+const normalizeProductContent = (
+  input: Partial<ProductSettingsUpdate> & ProductContentSettings,
+  fallback?: Partial<Product>,
+): ProductContentSettings => {
+  const image = normalizeText(input.image, fallback?.image || fallbackProductImage, 500);
+  if (!image.startsWith("/")) {
+    throw new Error("Escolha uma imagem enviada para o site.");
+  }
+
+  const content: ProductContentSettings = {
+    custom: Boolean(input.custom),
+    slug: normalizeText(input.slug, fallback?.slug || slugifyProduct(input.name || ""), 140),
+    category: normalizeCategory(input.category || fallback?.category),
+    type: normalizeText(input.type, fallback?.type || "Torrado e moído", 80),
+    weight: normalizeText(input.weight, fallback?.weight || "500g", 40),
+    roast: normalizeText(input.roast, fallback?.roast || "Média", 60),
+    grind: normalizeText(input.grind, fallback?.grind || "Moagem para coador", 80),
+    intensity: normalizeIntensity(input.intensity ?? fallback?.intensity),
+    intensityLabel: normalizeText(
+      input.intensityLabel,
+      fallback?.intensityLabel || "",
+      40,
+    ),
+    name: normalizeText(input.name, fallback?.name || "", 140),
+    image,
+    shortDescription: normalizeText(
+      input.shortDescription,
+      fallback?.shortDescription || "",
+      400,
+    ),
+    longDescription: normalizeText(
+      input.longDescription,
+      fallback?.longDescription || "",
+      3000,
+    ),
+    origin: normalizeText(input.origin, fallback?.origin || "Minas Gerais", 160),
+    preparation: normalizeText(
+      input.preparation,
+      fallback?.preparation || "Café coado",
+      160,
+    ),
+    sensoryNotes: normalizeNotes(input.sensoryNotes || fallback?.sensoryNotes),
+    contents: normalizeText(input.contents, fallback?.contents || "", 180),
+    badge: normalizeText(input.badge, fallback?.badge || "", 60),
+  };
+
+  if (input.deleted) content.deleted = true;
+  if (!content.name) throw new Error("Informe o nome do produto.");
+  if (!content.shortDescription) {
+    throw new Error("Informe a descrição curta do produto.");
+  }
+  if (!content.longDescription) {
+    content.longDescription = content.shortDescription;
+  }
+  return content;
+};
+
+const validateProductSettingsInput = (input: ProductSettingsUpdate) => {
+  if (!Number.isFinite(input.price) || input.price <= 0) {
+    throw new Error("Preço inválido.");
+  }
+  if (
+    input.stock !== null &&
+    (!Number.isInteger(input.stock) || input.stock < 0)
+  ) {
+    throw new Error("Estoque inválido.");
+  }
+};
 
 type ContentSettingsRow = {
   setting_key: string;
@@ -577,27 +704,90 @@ const getProductSettingsRows = async (): Promise<ProductSettingsRow[]> => {
     .all() as unknown as ProductSettingsRow[];
 };
 
+const parseProductContent = (
+  row?: ProductSettingsRow,
+): ProductContentSettings => {
+  if (!row?.content_json) return {};
+  return parseJson<ProductContentSettings>(row.content_json);
+};
+
+const toAdminProduct = (
+  product: Product,
+  row?: ProductSettingsRow,
+  custom = false,
+): AdminProduct | null => {
+  const savedContent = parseProductContent(row);
+  if (savedContent.deleted) return null;
+
+  return {
+    ...product,
+    ...savedContent,
+    id: product.id,
+    slug: savedContent.slug || product.slug,
+    category: normalizeCategory(savedContent.category || product.category),
+    intensity: normalizeIntensity(savedContent.intensity ?? product.intensity),
+    sensoryNotes: normalizeNotes(
+      savedContent.sensoryNotes || product.sensoryNotes,
+    ),
+    price: TEMPORARY_TEST_PRODUCT_PRICE,
+    active: row ? Boolean(row.active) : true,
+    stock: row?.stock ?? null,
+    adminFeatured: row ? Boolean(row.featured) : Boolean(product.featured),
+    featured: row ? Boolean(row.featured) : product.featured,
+    updatedAt: row?.updated_at || null,
+    custom,
+  };
+};
+
+const rowToCustomProduct = (row: ProductSettingsRow): AdminProduct | null => {
+  const savedContent = parseProductContent(row);
+  if (savedContent.deleted || !savedContent.custom || !savedContent.name) {
+    return null;
+  }
+
+  const baseProduct: Product = {
+    id: row.product_id,
+    name: savedContent.name,
+    slug: savedContent.slug || row.product_id.replace(/^custom-/, ""),
+    category: normalizeCategory(savedContent.category),
+    type: savedContent.type || "Torrado e moído",
+    weight: savedContent.weight || "500g",
+    roast: savedContent.roast || "Média",
+    grind: savedContent.grind || "Moagem para coador",
+    intensity: normalizeIntensity(savedContent.intensity),
+    intensityLabel: savedContent.intensityLabel || "",
+    shortDescription:
+      savedContent.shortDescription || "Café selecionado pela loja.",
+    longDescription:
+      savedContent.longDescription ||
+      savedContent.shortDescription ||
+      "Café selecionado pela loja.",
+    origin: savedContent.origin || "Minas Gerais",
+    preparation: savedContent.preparation || "Café coado",
+    sensoryNotes: normalizeNotes(savedContent.sensoryNotes),
+    price: Number(row.price),
+    image: savedContent.image || fallbackProductImage,
+    contents: savedContent.contents || "",
+    badge: savedContent.badge || "",
+    featured: Boolean(row.featured),
+  };
+
+  return toAdminProduct(baseProduct, row, true);
+};
+
 export const getAdminProducts = async (): Promise<AdminProduct[]> => {
   const rows = await getProductSettingsRows();
   const settings = new Map(rows.map((row) => [row.product_id, row]));
-  return products.map((product) => {
-    const saved = settings.get(product.id);
-    const savedContent = saved?.content_json
-      ? parseJson<Partial<AdminProduct>>(saved.content_json)
-      : {};
-    return {
-      ...product,
-      ...savedContent,
-      id: product.id,
-      slug: product.slug,
-      price: TEMPORARY_TEST_PRODUCT_PRICE,
-      active: saved ? Boolean(saved.active) : true,
-      stock: saved?.stock ?? null,
-      adminFeatured: saved ? Boolean(saved.featured) : Boolean(product.featured),
-      featured: saved ? Boolean(saved.featured) : product.featured,
-      updatedAt: saved?.updated_at || null,
-    };
-  });
+  const baseProductIds = new Set(products.map((product) => product.id));
+  const baseProducts = products
+    .map((product) => toAdminProduct(product, settings.get(product.id), false))
+    .filter(Boolean) as AdminProduct[];
+  const customProducts = rows
+    .filter((row) => !baseProductIds.has(row.product_id))
+    .map(rowToCustomProduct)
+    .filter(Boolean) as AdminProduct[];
+
+  return [...baseProducts, ...customProducts];
 };
 
 export const getStoreProducts = async () =>
@@ -625,6 +815,46 @@ export const getStoreProducts = async () =>
       badge: product.badge,
       featured: product.adminFeatured,
     }));
+
+const saveProductSettingsRow = async (row: ProductSettingsRow) => {
+  if (useSupabase) {
+    await supabaseRequest<ProductSettingsRow[]>(
+      "product_settings?on_conflict=product_id",
+      {
+        method: "POST",
+        headers: {
+          Prefer: "resolution=merge-duplicates,return=representation",
+        },
+        body: JSON.stringify(row),
+      },
+    );
+    return;
+  }
+
+  const database = await getLocalDatabase();
+  database
+    .prepare(
+      `INSERT INTO product_settings (
+        product_id, price, active, stock, featured, content_json, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(product_id) DO UPDATE SET
+        price = excluded.price,
+        active = excluded.active,
+        stock = excluded.stock,
+        featured = excluded.featured,
+        content_json = excluded.content_json,
+        updated_at = excluded.updated_at`,
+    )
+    .run(
+      row.product_id,
+      row.price,
+      row.active ? 1 : 0,
+      row.stock,
+      row.featured ? 1 : 0,
+      JSON.stringify(row.content_json),
+      row.updated_at,
+    );
+};
 
 export const updateProductSettings = async (
   productId: string,
@@ -702,6 +932,123 @@ export const updateProductSettings = async (
   }
 
   return (await getAdminProducts()).find((item) => item.id === productId);
+};
+
+export const saveAdminProductSettings = async (
+  productId: string,
+  input: ProductSettingsUpdate,
+) => {
+  const product = (await getAdminProducts()).find(
+    (candidate) => candidate.id === productId,
+  );
+  if (!product) throw new Error("Produto não encontrado.");
+  validateProductSettingsInput(input);
+
+  const contentJson = normalizeProductContent(
+    {
+      ...input,
+      custom: Boolean(product.custom),
+      slug: product.slug,
+    },
+    product,
+  );
+
+  const row: ProductSettingsRow = {
+    product_id: productId,
+    price: Number(input.price.toFixed(2)),
+    active: input.active,
+    stock: input.stock,
+    featured: input.featured,
+    content_json: contentJson,
+    updated_at: new Date().toISOString(),
+  };
+
+  await saveProductSettingsRow(row);
+
+  return (await getAdminProducts()).find((item) => item.id === productId);
+};
+
+export const createProductSettings = async (input: ProductSettingsCreate) => {
+  validateProductSettingsInput(input);
+
+  const currentProducts = await getAdminProducts();
+  const usedSlugs = new Set(currentProducts.map((product) => product.slug));
+  const usedIds = new Set(currentProducts.map((product) => product.id));
+  const baseSlug = slugifyProduct(input.name);
+  let slug = baseSlug;
+  let suffix = 2;
+
+  while (usedSlugs.has(slug) || usedIds.has(`custom-${slug}`)) {
+    slug = `${baseSlug}-${suffix}`;
+    suffix += 1;
+  }
+
+  const productId = `custom-${slug}`;
+  const contentJson = normalizeProductContent({
+    ...input,
+    custom: true,
+    slug,
+  });
+
+  const row: ProductSettingsRow = {
+    product_id: productId,
+    price: Number(input.price.toFixed(2)),
+    active: input.active,
+    stock: input.stock,
+    featured: input.featured,
+    content_json: contentJson,
+    updated_at: new Date().toISOString(),
+  };
+
+  await saveProductSettingsRow(row);
+
+  return (await getAdminProducts()).find((item) => item.id === productId);
+};
+
+export const deleteProductSettings = async (productId: string) => {
+  const product = (await getAdminProducts()).find(
+    (candidate) => candidate.id === productId,
+  );
+  if (!product) throw new Error("Produto não encontrado.");
+
+  if (product.custom) {
+    if (useSupabase) {
+      await supabaseRequest<ProductSettingsRow[]>(
+        `product_settings?product_id=eq.${encodeURIComponent(productId)}`,
+        {
+          method: "DELETE",
+          headers: { Prefer: "return=representation" },
+        },
+      );
+    } else {
+      const database = await getLocalDatabase();
+      database
+        .prepare("DELETE FROM product_settings WHERE product_id = ?")
+        .run(productId);
+    }
+    return { ok: true };
+  }
+
+  const contentJson = normalizeProductContent(
+    {
+      ...product,
+      custom: false,
+      deleted: true,
+    },
+    product,
+  );
+
+  await saveProductSettingsRow({
+    product_id: productId,
+    price: Number(product.price.toFixed(2)),
+    active: false,
+    stock: 0,
+    featured: false,
+    content_json: contentJson,
+    updated_at: new Date().toISOString(),
+  });
+
+  return { ok: true };
 };
 
 const mergeSiteContent = (

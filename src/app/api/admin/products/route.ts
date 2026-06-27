@@ -1,20 +1,21 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
-import {
-  deleteProductSettings,
-  saveAdminProductSettings,
-} from "@/lib/orders-db";
+import { createProductSettings } from "@/lib/orders-db";
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+const normalizeCategory = (value: unknown) =>
+  value === "Extraforte" ||
+  value === "Gourmet" ||
+  value === "Especial" ||
+  value === "Kits"
+    ? value
+    : "Tradicional";
+
+export async function POST(request: Request) {
   if (!(await getAdminSession())) {
-    return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+    return NextResponse.json({ error: "NÃ£o autorizado." }, { status: 401 });
   }
 
   try {
-    const { id } = await params;
     const payload = (await request.json()) as {
       price?: number;
       active?: boolean;
@@ -37,9 +38,10 @@ export async function PATCH(
       contents?: string;
       badge?: string;
     };
-    const product = await saveAdminProductSettings(id, {
+
+    const product = await createProductSettings({
       price: Number(payload.price),
-      active: Boolean(payload.active),
+      active: payload.active !== false,
       stock:
         payload.stock === null || payload.stock === undefined
           ? null
@@ -47,13 +49,7 @@ export async function PATCH(
       featured: Boolean(payload.featured),
       name: payload.name || "",
       image: payload.image || "",
-      category:
-        payload.category === "Extraforte" ||
-        payload.category === "Gourmet" ||
-        payload.category === "Especial" ||
-        payload.category === "Kits"
-          ? payload.category
-          : "Tradicional",
+      category: normalizeCategory(payload.category),
       type: payload.type || "",
       weight: payload.weight || "",
       roast: payload.roast || "",
@@ -70,35 +66,13 @@ export async function PATCH(
       contents: payload.contents || "",
       badge: payload.badge || "",
     });
-    return NextResponse.json({ ok: true, product });
+
+    return NextResponse.json({ ok: true, product }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "Não foi possível salvar.",
-      },
-      { status: 400 },
-    );
-  }
-}
-
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  if (!(await getAdminSession())) {
-    return NextResponse.json({ error: "NÃ£o autorizado." }, { status: 401 });
-  }
-
-  try {
-    const { id } = await params;
-    await deleteProductSettings(id);
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "NÃ£o foi possÃ­vel excluir.",
+          error instanceof Error ? error.message : "NÃ£o foi possÃ­vel criar.",
       },
       { status: 400 },
     );

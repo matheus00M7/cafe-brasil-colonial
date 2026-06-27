@@ -1,12 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Check, LoaderCircle, Save, Trash2 } from "lucide-react";
-import type { AdminProduct } from "@/types/admin";
+import { Check, LoaderCircle, PackagePlus, Plus, X } from "lucide-react";
 import type { ProductCategory } from "@/types/product";
-import { formatCurrency } from "@/lib/formatCurrency";
 import { ImageUploadField } from "./ImageUploadField";
 
 const inputClass =
@@ -20,56 +17,73 @@ const categories: ProductCategory[] = [
   "Kits",
 ];
 
+const initialImage = "/products/tradicional-500g.webp";
+
 const notesToArray = (value: string) =>
   value
     .split(/[,;\n]/)
     .map((item) => item.trim())
     .filter(Boolean);
 
-export function ProductAdminCard({ product }: { product: AdminProduct }) {
+export function CreateProductForm() {
   const router = useRouter();
-  const [name, setName] = useState(product.name);
-  const [image, setImage] = useState(product.image);
-  const [category, setCategory] = useState<ProductCategory>(product.category);
-  const [type, setType] = useState(product.type);
-  const [weight, setWeight] = useState(product.weight);
-  const [roast, setRoast] = useState(product.roast);
-  const [grind, setGrind] = useState(product.grind);
-  const [intensity, setIntensity] = useState(String(product.intensity));
-  const [intensityLabel, setIntensityLabel] = useState(
-    product.intensityLabel || "",
-  );
-  const [shortDescription, setShortDescription] = useState(
-    product.shortDescription,
-  );
-  const [longDescription, setLongDescription] = useState(
-    product.longDescription,
-  );
-  const [origin, setOrigin] = useState(product.origin);
-  const [preparation, setPreparation] = useState(product.preparation);
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [image, setImage] = useState(initialImage);
+  const [category, setCategory] = useState<ProductCategory>("Tradicional");
+  const [type, setType] = useState("Torrado e moído");
+  const [weight, setWeight] = useState("500g");
+  const [roast, setRoast] = useState("Média");
+  const [grind, setGrind] = useState("Moagem para coador");
+  const [intensity, setIntensity] = useState("5");
+  const [intensityLabel, setIntensityLabel] = useState("");
+  const [shortDescription, setShortDescription] = useState("");
+  const [longDescription, setLongDescription] = useState("");
+  const [origin, setOrigin] = useState("Minas Gerais");
+  const [preparation, setPreparation] = useState("Café coado");
   const [sensoryNotes, setSensoryNotes] = useState(
-    product.sensoryNotes.join(", "),
+    "Encorpado, Aroma clássico",
   );
-  const [contents, setContents] = useState(product.contents || "");
-  const [badge, setBadge] = useState(product.badge || "");
-  const [price, setPrice] = useState(product.price.toFixed(2));
-  const [stock, setStock] = useState(
-    product.stock === null ? "" : String(product.stock),
-  );
-  const [active, setActive] = useState(product.active);
-  const [featured, setFeatured] = useState(product.adminFeatured);
+  const [contents, setContents] = useState("");
+  const [badge, setBadge] = useState("");
+  const [price, setPrice] = useState("1.00");
+  const [stock, setStock] = useState("");
+  const [active, setActive] = useState(true);
+  const [featured, setFeatured] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
-  const save = async () => {
+  const reset = () => {
+    setName("");
+    setImage(initialImage);
+    setCategory("Tradicional");
+    setType("Torrado e moído");
+    setWeight("500g");
+    setRoast("Média");
+    setGrind("Moagem para coador");
+    setIntensity("5");
+    setIntensityLabel("");
+    setShortDescription("");
+    setLongDescription("");
+    setOrigin("Minas Gerais");
+    setPreparation("Café coado");
+    setSensoryNotes("Encorpado, Aroma clássico");
+    setContents("");
+    setBadge("");
+    setPrice("1.00");
+    setStock("");
+    setActive(true);
+    setFeatured(false);
+  };
+
+  const create = async () => {
     setSaving(true);
     setSaved(false);
     setError("");
     try {
-      const response = await fetch(`/api/admin/products/${product.id}`, {
-        method: "PATCH",
+      const response = await fetch("/api/admin/products", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           price: Number(price.replace(",", ".")),
@@ -86,7 +100,7 @@ export function ProductAdminCard({ product }: { product: AdminProduct }) {
           intensity: Number(intensity),
           intensityLabel,
           shortDescription,
-          longDescription,
+          longDescription: longDescription || shortDescription,
           origin,
           preparation,
           sensoryNotes: notesToArray(sensoryNotes),
@@ -95,90 +109,59 @@ export function ProductAdminCard({ product }: { product: AdminProduct }) {
         }),
       });
       const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error || "Falha ao salvar.");
+      if (!response.ok) throw new Error(payload.error || "Falha ao criar.");
+
       setSaved(true);
+      reset();
       router.refresh();
       window.setTimeout(() => setSaved(false), 2000);
-    } catch (saveError) {
+    } catch (createError) {
       setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Não foi possível salvar.",
+        createError instanceof Error
+          ? createError.message
+          : "Não foi possível criar o produto.",
       );
     } finally {
       setSaving(false);
     }
   };
 
-  const remove = async () => {
-    const confirmed = window.confirm(
-      `Excluir "${name}" da loja? Essa ação remove o produto da vitrine.`,
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-8 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-brand-green px-6 text-sm font-extrabold text-white shadow-card hover:bg-[#005d3b]"
+      >
+        <PackagePlus className="h-5 w-5" />
+        Adicionar produto
+      </button>
     );
-    if (!confirmed) return;
-
-    setDeleting(true);
-    setSaved(false);
-    setError("");
-    try {
-      const response = await fetch(`/api/admin/products/${product.id}`, {
-        method: "DELETE",
-      });
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error || "Falha ao excluir.");
-      router.refresh();
-    } catch (deleteError) {
-      setError(
-        deleteError instanceof Error
-          ? deleteError.message
-          : "Não foi possível excluir.",
-      );
-    } finally {
-      setDeleting(false);
-    }
-  };
+  }
 
   return (
-    <article className="overflow-hidden rounded-3xl border border-brand-brown/10 bg-white p-5 shadow-card sm:p-6">
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-        <div className="relative aspect-square w-full shrink-0 overflow-hidden rounded-3xl border border-brand-brown/10 bg-[#f6ecdd] sm:w-44">
-          <Image
-            src={image}
-            alt={name}
-            fill
-            className="object-contain p-3"
-            sizes="176px"
-          />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-brand-green">
-                {category} · {weight}
-              </p>
-              <h2 className="mt-2 text-xl font-extrabold text-brand-brown">
-                {name}
-              </h2>
-              <p className="mt-1 text-xs text-brand-ink/45">
-                Preço atual:{" "}
-                {formatCurrency(Number(price.replace(",", ".")) || 0)}
-              </p>
-            </div>
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-extrabold ${
-                active
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "bg-stone-100 text-stone-600"
-              }`}
-            >
-              {active ? "À venda" : "Oculto"}
-            </span>
-          </div>
-
-          <p className="mt-4 text-sm leading-6 text-brand-ink/55">
-            {shortDescription}
+    <section className="mt-8 rounded-3xl border border-brand-green/20 bg-white p-5 shadow-card sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-green">
+            Novo item da loja
+          </p>
+          <h2 className="mt-2 text-2xl font-extrabold text-brand-brown">
+            Adicionar produto
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-brand-ink/55">
+            Cadastre nome, preço, imagem e detalhes. Depois de salvar, o produto
+            aparece na loja, no carrinho e no painel.
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-brand-brown/10 text-brand-brown hover:bg-brand-cream"
+          aria-label="Fechar formulário"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -188,6 +171,7 @@ export function ProductAdminCard({ product }: { product: AdminProduct }) {
             value={name}
             onChange={(event) => setName(event.target.value)}
             className={inputClass}
+            placeholder="Ex.: Café Brasil Colonial Tradicional 250g"
           />
         </label>
         <label className="text-sm font-bold text-brand-ink">
@@ -231,7 +215,6 @@ export function ProductAdminCard({ product }: { product: AdminProduct }) {
             value={type}
             onChange={(event) => setType(event.target.value)}
             className={inputClass}
-            placeholder="Ex.: Torrado e moído"
           />
         </label>
         <label className="text-sm font-bold text-brand-ink">
@@ -240,7 +223,6 @@ export function ProductAdminCard({ product }: { product: AdminProduct }) {
             value={weight}
             onChange={(event) => setWeight(event.target.value)}
             className={inputClass}
-            placeholder="Ex.: 500g"
           />
         </label>
         <label className="text-sm font-bold text-brand-ink">
@@ -249,7 +231,6 @@ export function ProductAdminCard({ product }: { product: AdminProduct }) {
             value={roast}
             onChange={(event) => setRoast(event.target.value)}
             className={inputClass}
-            placeholder="Ex.: Média"
           />
         </label>
         <label className="text-sm font-bold text-brand-ink">
@@ -258,7 +239,6 @@ export function ProductAdminCard({ product }: { product: AdminProduct }) {
             value={grind}
             onChange={(event) => setGrind(event.target.value)}
             className={inputClass}
-            placeholder="Ex.: Moagem para coador"
           />
         </label>
         <label className="text-sm font-bold text-brand-ink">
@@ -286,7 +266,7 @@ export function ProductAdminCard({ product }: { product: AdminProduct }) {
             value={badge}
             onChange={(event) => setBadge(event.target.value)}
             className={inputClass}
-            placeholder="Ex.: Mais vendido"
+            placeholder="Ex.: Lançamento"
           />
         </label>
         <label className="text-sm font-bold text-brand-ink sm:col-span-2">
@@ -303,6 +283,7 @@ export function ProductAdminCard({ product }: { product: AdminProduct }) {
             value={longDescription}
             onChange={(event) => setLongDescription(event.target.value)}
             className={`${inputClass} min-h-32 py-3`}
+            placeholder="Se deixar vazio, uso a descrição curta."
           />
         </label>
         <label className="text-sm font-bold text-brand-ink">
@@ -311,7 +292,6 @@ export function ProductAdminCard({ product }: { product: AdminProduct }) {
             value={origin}
             onChange={(event) => setOrigin(event.target.value)}
             className={inputClass}
-            placeholder="Ex.: Minas Gerais"
           />
         </label>
         <label className="text-sm font-bold text-brand-ink">
@@ -320,7 +300,6 @@ export function ProductAdminCard({ product }: { product: AdminProduct }) {
             value={preparation}
             onChange={(event) => setPreparation(event.target.value)}
             className={inputClass}
-            placeholder="Ex.: Café coado"
           />
         </label>
         <label className="text-sm font-bold text-brand-ink sm:col-span-2">
@@ -346,7 +325,7 @@ export function ProductAdminCard({ product }: { product: AdminProduct }) {
             label="Imagem do produto"
             value={image}
             onChange={setImage}
-            help="Use uma foto quadrada ou vertical, com fundo limpo."
+            help="Você pode trocar por uma imagem enviada pelo painel."
             contain
           />
         </div>
@@ -379,37 +358,21 @@ export function ProductAdminCard({ product }: { product: AdminProduct }) {
         </p>
       )}
 
-      <div className="mt-5 flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={save}
-          disabled={saving || deleting}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-brand-brown px-5 text-sm font-extrabold text-white hover:bg-[#4d1a0e] disabled:opacity-60"
-        >
-          {saving ? (
-            <LoaderCircle className="h-4 w-4 animate-spin" />
-          ) : saved ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          {saving ? "Salvando..." : saved ? "Salvo" : "Salvar produto"}
-        </button>
-
-        <button
-          type="button"
-          onClick={remove}
-          disabled={saving || deleting}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-red-200 bg-red-50 px-5 text-sm font-extrabold text-red-700 hover:bg-red-100 disabled:opacity-60"
-        >
-          {deleting ? (
-            <LoaderCircle className="h-4 w-4 animate-spin" />
-          ) : (
-            <Trash2 className="h-4 w-4" />
-          )}
-          {deleting ? "Excluindo..." : "Excluir produto"}
-        </button>
-      </div>
-    </article>
+      <button
+        type="button"
+        onClick={create}
+        disabled={saving}
+        className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-brand-brown px-5 text-sm font-extrabold text-white hover:bg-[#4d1a0e] disabled:opacity-60"
+      >
+        {saving ? (
+          <LoaderCircle className="h-4 w-4 animate-spin" />
+        ) : saved ? (
+          <Check className="h-4 w-4" />
+        ) : (
+          <Plus className="h-4 w-4" />
+        )}
+        {saving ? "Criando..." : saved ? "Criado" : "Criar produto"}
+      </button>
+    </section>
   );
 }
