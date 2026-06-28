@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
+import { FloatingWhatsApp } from "@/components/ui/FloatingWhatsApp";
 
 export function SiteChrome({
   children,
@@ -22,6 +23,7 @@ export function SiteChrome({
       <Header customer={customer} />
       <main>{children}</main>
       <Footer />
+      <FloatingWhatsApp />
     </>
   );
 }
