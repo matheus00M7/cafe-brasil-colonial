@@ -4,11 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import type { CartItem as CartItemType } from "@/types/cart";
-import { useCart } from "@/context/CartContext";
+import { getCartItemKey, useCart } from "@/context/CartContext";
 import { formatCurrency } from "@/lib/formatCurrency";
 
 export function CartItem({ item }: { item: CartItemType }) {
   const { updateQuantity, removeItem } = useCart();
+  const cartKey = getCartItemKey(item);
+  const optionSummary = item.selectedOptions
+    ?.map((option) => `${option.name}: ${option.value}`)
+    .join(" · ");
 
   return (
     <article className="grid gap-5 rounded-3xl border border-brand-brown/10 bg-white p-4 shadow-card sm:grid-cols-[140px_1fr] sm:p-5">
@@ -35,13 +39,18 @@ export function CartItem({ item }: { item: CartItemType }) {
                 {item.product.name}
               </Link>
             </h2>
+            {optionSummary && (
+              <p className="mt-2 inline-flex rounded-full bg-brand-cream px-3 py-1 text-xs font-extrabold text-brand-brown">
+                {optionSummary}
+              </p>
+            )}
             <p className="mt-2 text-sm text-brand-ink/50">
               {formatCurrency(item.product.price)} por unidade
             </p>
           </div>
           <button
             type="button"
-            onClick={() => removeItem(item.product.id)}
+            onClick={() => removeItem(cartKey)}
             className="rounded-full p-2 text-brand-ink/35 transition hover:bg-red-50 hover:text-red-600"
             aria-label={`Remover ${item.product.name}`}
           >
@@ -52,9 +61,7 @@ export function CartItem({ item }: { item: CartItemType }) {
           <div className="flex items-center rounded-full border border-brand-brown/15">
             <button
               type="button"
-              onClick={() =>
-                updateQuantity(item.product.id, item.quantity - 1)
-              }
+              onClick={() => updateQuantity(cartKey, item.quantity - 1)}
               className="p-3 text-brand-brown"
               aria-label="Diminuir quantidade"
             >
@@ -65,9 +72,7 @@ export function CartItem({ item }: { item: CartItemType }) {
             </span>
             <button
               type="button"
-              onClick={() =>
-                updateQuantity(item.product.id, item.quantity + 1)
-              }
+              onClick={() => updateQuantity(cartKey, item.quantity + 1)}
               className="p-3 text-brand-brown"
               aria-label="Aumentar quantidade"
             >

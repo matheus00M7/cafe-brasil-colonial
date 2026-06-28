@@ -13,8 +13,10 @@ import { Button } from "@/components/ui/Button";
 export function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
   const [added, setAdded] = useState(false);
+  const hasOptions = Boolean(product.productOptions?.length);
 
   const handleAdd = () => {
+    if (hasOptions) return;
     addItem(product);
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1600);
@@ -28,7 +30,7 @@ export function ProductCard({ product }: { product: Product }) {
       >
         <Image
           src={product.image}
-          alt={`Mockup ilustrativo de ${product.name}`}
+          alt={`Imagem de ${product.name}`}
           fill
           className="object-cover transition duration-500 group-hover:scale-[1.035]"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -57,7 +59,7 @@ export function ProductCard({ product }: { product: Product }) {
             </p>
           </div>
           <span className="rounded-full bg-brand-mist px-3 py-2 text-xs font-bold text-brand-brown">
-            Intensidade {product.intensity}/10
+            {hasOptions ? "Escolha opções" : `Intensidade ${product.intensity}/10`}
           </span>
         </div>
         <div className="mt-6 grid gap-2 sm:grid-cols-2">
@@ -68,22 +70,28 @@ export function ProductCard({ product }: { product: Product }) {
           >
             Ver detalhes
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={handleAdd}
-            className={added ? "bg-brand-green hover:bg-brand-green" : ""}
-          >
-            {added ? (
-              <>
-                <Check className="h-4 w-4" /> Adicionado
-              </>
-            ) : (
-              <>
-                <ShoppingBag className="h-4 w-4" /> Adicionar
-              </>
-            )}
-          </Button>
+          {hasOptions ? (
+            <Button href={`/produtos/${product.slug}`} size="sm">
+              Escolher
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleAdd}
+              className={added ? "bg-brand-green hover:bg-brand-green" : ""}
+            >
+              {added ? (
+                <>
+                  <Check className="h-4 w-4" /> Adicionado
+                </>
+              ) : (
+                <>
+                  <ShoppingBag className="h-4 w-4" /> Adicionar
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </article>

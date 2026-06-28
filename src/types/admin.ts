@@ -1,4 +1,4 @@
-import type { Product } from "./product";
+import type { Product, ProductKind, ProductOption } from "./product";
 
 export type AdminProduct = Product & {
   active: boolean;
@@ -16,6 +16,8 @@ export type ProductSettingsUpdate = {
   name: string;
   image: string;
   category: Product["category"];
+  productKind: ProductKind;
+  productOptions: ProductOption[];
   type: string;
   weight: string;
   roast: string;

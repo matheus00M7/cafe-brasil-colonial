@@ -81,7 +81,7 @@ export default async function AdminOrderDetailPage({
             <div className="mt-5 divide-y divide-brand-brown/8">
               {order.items.map((item) => (
                 <div
-                  key={item.productId}
+                  key={`${item.productId}-${item.optionSummary || ""}`}
                   className="flex gap-4 py-4 first:pt-0 last:pb-0"
                 >
                   <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-brand-mist">
@@ -97,6 +97,11 @@ export default async function AdminOrderDetailPage({
                     <p className="font-extrabold text-brand-brown">
                       {item.name}
                     </p>
+                    {item.optionSummary && (
+                      <p className="mt-1 inline-flex rounded-full bg-brand-cream px-3 py-1 text-xs font-extrabold text-brand-brown">
+                        {item.optionSummary}
+                      </p>
+                    )}
                     <p className="mt-1 text-sm text-brand-ink/50">
                       {item.quantity} × {formatCurrency(item.unitPrice)}
                     </p>

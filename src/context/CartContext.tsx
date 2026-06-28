@@ -10,21 +10,33 @@ import {
   type ReactNode,
 } from "react";
 import type { CartItem } from "@/types/cart";
-import type { Product } from "@/types/product";
+import type { Product, ProductSelectedOption } from "@/types/product";
 
 type CartContextValue = {
   items: CartItem[];
   itemCount: number;
   subtotal: number;
   hydrated: boolean;
-  addItem: (product: Product, quantity?: number) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  removeItem: (productId: string) => void;
+  addItem: (
+    product: Product,
+    quantity?: number,
+    selectedOptions?: ProductSelectedOption[],
+  ) => void;
+  updateQuantity: (cartKey: string, quantity: number) => void;
+  removeItem: (cartKey: string) => void;
   clearCart: () => void;
 };
 
 const STORAGE_KEY = "cafe-brasil-colonial-cart";
 const CartContext = createContext<CartContextValue | null>(null);
+
+export const getCartItemKey = (item: CartItem) => {
+  const options = (item.selectedOptions || [])
+    .map((option) => `${option.optionId}:${option.value}`)
+    .sort()
+    .join("|");
+  return options ? `${item.product.id}::${options}` : item.product.id;
+};
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -45,37 +57,48 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (hydrated) localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items, hydrated]);
 
-  const addItem = useCallback((product: Product, quantity = 1) => {
-    setItems((current) => {
-      const existing = current.find((item) => item.product.id === product.id);
-      if (existing) {
-        return current.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item,
+  const addItem = useCallback(
+    (
+      product: Product,
+      quantity = 1,
+      selectedOptions: ProductSelectedOption[] = [],
+    ) => {
+      setItems((current) => {
+        const nextItem: CartItem = { product, quantity, selectedOptions };
+        const nextKey = getCartItemKey(nextItem);
+        const existing = current.find(
+          (item) => getCartItemKey(item) === nextKey,
         );
-      }
-      return [...current, { product, quantity }];
-    });
-  }, []);
+        if (existing) {
+          return current.map((item) =>
+            getCartItemKey(item) === nextKey
+              ? { ...item, quantity: item.quantity + quantity }
+              : item,
+          );
+        }
+        return [...current, nextItem];
+      });
+    },
+    [],
+  );
 
-  const updateQuantity = useCallback((productId: string, quantity: number) => {
+  const updateQuantity = useCallback((cartKey: string, quantity: number) => {
     if (quantity <= 0) {
       setItems((current) =>
-        current.filter((item) => item.product.id !== productId),
+        current.filter((item) => getCartItemKey(item) !== cartKey),
       );
       return;
     }
     setItems((current) =>
       current.map((item) =>
-        item.product.id === productId ? { ...item, quantity } : item,
+        getCartItemKey(item) === cartKey ? { ...item, quantity } : item,
       ),
     );
   }, []);
 
-  const removeItem = useCallback((productId: string) => {
+  const removeItem = useCallback((cartKey: string) => {
     setItems((current) =>
-      current.filter((item) => item.product.id !== productId),
+      current.filter((item) => getCartItemKey(item) !== cartKey),
     );
   }, []);
 

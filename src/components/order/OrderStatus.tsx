@@ -275,7 +275,10 @@ export function OrderStatus({ initialOrder }: { initialOrder: PublicOrder }) {
         </p>
         <div className="mt-6 space-y-4">
           {order.items.map((item) => (
-            <div key={item.productId} className="flex gap-3">
+            <div
+              key={`${item.productId}-${item.optionSummary || ""}`}
+              className="flex gap-3"
+            >
               <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-brand-cream">
                 <Image
                   src={item.image}
@@ -287,6 +290,11 @@ export function OrderStatus({ initialOrder }: { initialOrder: PublicOrder }) {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="line-clamp-2 text-sm font-bold">{item.name}</p>
+                {item.optionSummary && (
+                  <p className="mt-1 text-xs font-bold text-brand-cream">
+                    {item.optionSummary}
+                  </p>
+                )}
                 <p className="mt-1 text-xs text-white/50">
                   {item.quantity}x {formatCurrency(item.unitPrice)}
                 </p>

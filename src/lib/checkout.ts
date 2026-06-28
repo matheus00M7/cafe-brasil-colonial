@@ -81,11 +81,44 @@ export const buildOrderItems = async (
       );
     }
 
+    const selectedOptions = Array.isArray(item.selectedOptions)
+      ? item.selectedOptions
+          .map((option) => ({
+            optionId: clean(option.optionId).slice(0, 80),
+            name: clean(option.name).slice(0, 60),
+            value: clean(option.value).slice(0, 60),
+          }))
+          .filter((option) => option.optionId && option.name && option.value)
+      : [];
+    const productOptions = product.productOptions || [];
+
+    for (const option of productOptions) {
+      const selected = selectedOptions.find(
+        (candidate) => candidate.optionId === option.id,
+      );
+      if (option.required !== false && !selected) {
+        throw new Error(`Escolha ${option.name} para ${product.name}.`);
+      }
+      if (selected && !option.values.includes(selected.value)) {
+        throw new Error(`Opção inválida para ${product.name}.`);
+      }
+    }
+
+    const validOptionIds = new Set(productOptions.map((option) => option.id));
+    const safeSelectedOptions = selectedOptions.filter((option) =>
+      validOptionIds.has(option.optionId),
+    );
+    const optionSummary = safeSelectedOptions
+      .map((option) => `${option.name}: ${option.value}`)
+      .join(" · ");
+
     return {
       productId: product.id,
       name: product.name,
       slug: product.slug,
       image: product.image,
+      selectedOptions: safeSelectedOptions,
+      optionSummary,
       quantity,
       unitPrice: product.price,
       total: Number((product.price * quantity).toFixed(2)),

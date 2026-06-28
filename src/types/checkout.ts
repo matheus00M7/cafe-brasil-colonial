@@ -1,3 +1,5 @@
+import type { ProductSelectedOption } from "./product";
+
 export type DeliveryMethod = "correios" | "retirada";
 
 export type CheckoutData = {
@@ -19,6 +21,7 @@ export type CheckoutData = {
 export type CheckoutCartItem = {
   productId: string;
   quantity: number;
+  selectedOptions?: ProductSelectedOption[];
 };
 
 export type CheckoutSessionResponse = {

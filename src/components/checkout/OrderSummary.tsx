@@ -17,8 +17,13 @@ export function OrderSummary({
     <aside className="sticky top-32 rounded-4xl bg-brand-brown p-6 text-white shadow-soft sm:p-8">
       <h2 className="text-2xl font-extrabold">Seu pedido</h2>
       <div className="mt-6 space-y-4">
-        {items.map(({ product, quantity }) => (
-          <div key={product.id} className="flex gap-3">
+        {items.map(({ product, quantity, selectedOptions }) => {
+          const optionSummary = selectedOptions
+            ?.map((option) => `${option.name}: ${option.value}`)
+            .join(" · ");
+          const key = optionSummary ? `${product.id}-${optionSummary}` : product.id;
+          return (
+          <div key={key} className="flex gap-3">
             <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-brand-cream">
               <Image
                 src={product.image}
@@ -30,6 +35,11 @@ export function OrderSummary({
             </div>
             <div className="min-w-0 flex-1">
               <p className="line-clamp-2 text-sm font-bold">{product.name}</p>
+              {optionSummary && (
+                <p className="mt-1 text-xs font-bold text-brand-cream">
+                  {optionSummary}
+                </p>
+              )}
               <p className="mt-1 text-xs text-white/55">
                 {quantity}x {formatCurrency(product.price)}
               </p>
@@ -38,7 +48,8 @@ export function OrderSummary({
               {formatCurrency(product.price * quantity)}
             </p>
           </div>
-        ))}
+          );
+        })}
       </div>
       <div className="mt-6 space-y-3 border-t border-white/15 pt-6 text-sm">
         <div className="flex justify-between text-white/65">

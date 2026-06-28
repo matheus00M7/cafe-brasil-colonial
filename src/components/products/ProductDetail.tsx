@@ -12,7 +12,7 @@ import {
   Plus,
   ShoppingBag,
 } from "lucide-react";
-import type { Product } from "@/types/product";
+import type { Product, ProductSelectedOption } from "@/types/product";
 import { useCart } from "@/context/CartContext";
 import { formatCurrency } from "@/lib/formatCurrency";
 import { Badge } from "@/components/ui/Badge";
@@ -22,10 +22,35 @@ import { Container } from "@/components/ui/Container";
 export function ProductDetail({ product }: { product: Product }) {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [selected, setSelected] = useState<Record<string, string>>({});
+  const [optionError, setOptionError] = useState("");
   const { addItem } = useCart();
 
+  const productOptions = product.productOptions || [];
+  const missingRequiredOption = productOptions.some(
+    (option) => option.required !== false && !selected[option.id],
+  );
+
+  const selectedOptions: ProductSelectedOption[] = productOptions
+    .map((option) => {
+      const value = selected[option.id];
+      return value
+        ? {
+            optionId: option.id,
+            name: option.name,
+            value,
+          }
+        : null;
+    })
+    .filter(Boolean) as ProductSelectedOption[];
+
   const handleAdd = () => {
-    addItem(product, quantity);
+    if (missingRequiredOption) {
+      setOptionError("Escolha as opções do produto antes de adicionar.");
+      return;
+    }
+    addItem(product, quantity, selectedOptions);
+    setOptionError("");
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1600);
   };
@@ -42,13 +67,15 @@ export function ProductDetail({ product }: { product: Product }) {
         <div className="relative aspect-square overflow-hidden rounded-4xl bg-brand-mist shadow-card">
           <Image
             src={product.image}
-            alt={`Mockup ilustrativo de ${product.name}`}
+            alt={`Imagem de ${product.name}`}
             fill
             priority
             className="object-cover"
             sizes="(max-width: 1024px) 100vw, 50vw"
           />
-          <Badge className="absolute left-5 top-5">{product.badge}</Badge>
+          {product.badge && (
+            <Badge className="absolute left-5 top-5">{product.badge}</Badge>
+          )}
         </div>
         <div className="lg:pt-4">
           <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-brand-green">
@@ -63,12 +90,13 @@ export function ProductDetail({ product }: { product: Product }) {
           <p className="mt-7 text-4xl font-extrabold text-brand-brown">
             {formatCurrency(product.price)}
           </p>
+
           <div className="mt-8 grid grid-cols-2 gap-3">
             {[
-              ["Torra", product.roast],
+              ["Torra / acabamento", product.roast],
               ["Tipo", product.type],
-              ["Moagem", product.grind],
-              ["Intensidade", `${product.intensity}/10`],
+              ["Moagem / modelo", product.grind],
+              ["Destaque", product.intensityLabel || `${product.intensity}/10`],
             ].map(([label, value]) => (
               <div
                 key={label}
@@ -81,16 +109,60 @@ export function ProductDetail({ product }: { product: Product }) {
               </div>
             ))}
           </div>
+
+          {productOptions.length > 0 && (
+            <div className="mt-6 space-y-4 rounded-3xl border border-brand-green/20 bg-brand-green/5 p-5">
+              <h2 className="text-lg font-extrabold text-brand-brown">
+                Escolha as opções
+              </h2>
+              {productOptions.map((option) => (
+                <div key={option.id}>
+                  <p className="text-sm font-extrabold text-brand-ink">
+                    {option.name}
+                    {option.required !== false && " *"}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {option.values.map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() =>
+                          setSelected((current) => ({
+                            ...current,
+                            [option.id]: value,
+                          }))
+                        }
+                        className={`rounded-full border px-4 py-2 text-sm font-extrabold transition ${
+                          selected[option.id] === value
+                            ? "border-brand-green bg-brand-green text-white"
+                            : "border-brand-brown/15 bg-white text-brand-brown hover:border-brand-green"
+                        }`}
+                      >
+                        {value}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {optionError && (
+                <p className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-700">
+                  {optionError}
+                </p>
+              )}
+            </div>
+          )}
+
           {product.contents && (
             <div className="mt-4 rounded-2xl bg-brand-cream/45 p-4">
               <span className="text-xs font-extrabold uppercase tracking-wider text-brand-brown">
-                O kit contém
+                O produto contém
               </span>
               <p className="mt-1 font-bold text-brand-brown">
                 {product.contents}
               </p>
             </div>
           )}
+
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <div className="flex min-h-14 items-center justify-between rounded-full border border-brand-brown/15 bg-white px-2">
               <button
@@ -130,6 +202,7 @@ export function ProductDetail({ product }: { product: Product }) {
               )}
             </Button>
           </div>
+
           <div className="mt-9 space-y-5 border-t border-brand-brown/10 pt-8">
             <div className="flex gap-3">
               <MapPin className="mt-1 h-5 w-5 shrink-0 text-brand-green" />
@@ -144,7 +217,7 @@ export function ProductDetail({ product }: { product: Product }) {
               <Coffee className="mt-1 h-5 w-5 shrink-0 text-brand-green" />
               <div>
                 <h2 className="font-extrabold text-brand-brown">
-                  Sugestão de preparo
+                  Preparo ou uso indicado
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-brand-ink/65">
                   {product.preparation}
@@ -153,7 +226,7 @@ export function ProductDetail({ product }: { product: Product }) {
             </div>
             <div>
               <h2 className="font-extrabold text-brand-brown">
-                Notas sensoriais
+                Características
               </h2>
               <div className="mt-3 flex flex-wrap gap-2">
                 {product.sensoryNotes.map((note) => (

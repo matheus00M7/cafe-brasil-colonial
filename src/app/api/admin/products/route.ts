@@ -1,14 +1,33 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { createProductSettings } from "@/lib/orders-db";
+import type { ProductCategory, ProductKind, ProductOption } from "@/types/product";
 
-const normalizeCategory = (value: unknown) =>
+const normalizeCategory = (value: unknown): ProductCategory =>
   value === "Extraforte" ||
   value === "Gourmet" ||
   value === "Especial" ||
-  value === "Kits"
+  value === "Kits" ||
+  value === "Fardos" ||
+  value === "Canecas" ||
+  value === "Camisetas" ||
+  value === "Acessórios" ||
+  value === "Outros"
     ? value
     : "Tradicional";
+
+const normalizeProductKind = (value: unknown): ProductKind =>
+  value === "coffee_bundle" ||
+  value === "coffee_bale" ||
+  value === "mug" ||
+  value === "shirt" ||
+  value === "accessory" ||
+  value === "other"
+    ? value
+    : "coffee";
+
+const normalizeProductOptions = (value: unknown): ProductOption[] =>
+  Array.isArray(value) ? (value as ProductOption[]) : [];
 
 export async function POST(request: Request) {
   if (!(await getAdminSession())) {
@@ -24,6 +43,8 @@ export async function POST(request: Request) {
       name?: string;
       image?: string;
       category?: string;
+      productKind?: ProductKind;
+      productOptions?: ProductOption[];
       type?: string;
       weight?: string;
       roast?: string;
@@ -50,6 +71,8 @@ export async function POST(request: Request) {
       name: payload.name || "",
       image: payload.image || "",
       category: normalizeCategory(payload.category),
+      productKind: normalizeProductKind(payload.productKind),
+      productOptions: normalizeProductOptions(payload.productOptions),
       type: payload.type || "",
       weight: payload.weight || "",
       roast: payload.roast || "",

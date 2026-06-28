@@ -20,7 +20,12 @@ import type {
   ProductSettingsUpdate,
 } from "@/types/admin";
 import type { SiteContent } from "@/types/site-content";
-import type { Product, ProductCategory } from "@/types/product";
+import type {
+  Product,
+  ProductCategory,
+  ProductKind,
+  ProductOption,
+} from "@/types/product";
 import { products } from "@/data/products";
 import { defaultSiteContent } from "@/data/site-content";
 
@@ -73,6 +78,21 @@ const PRODUCT_CATEGORIES: ProductCategory[] = [
   "Gourmet",
   "Especial",
   "Kits",
+  "Fardos",
+  "Canecas",
+  "Camisetas",
+  "Acessórios",
+  "Outros",
+];
+
+const PRODUCT_KINDS: ProductKind[] = [
+  "coffee",
+  "coffee_bundle",
+  "coffee_bale",
+  "mug",
+  "shirt",
+  "accessory",
+  "other",
 ];
 
 const fallbackProductImage = "/products/tradicional-500g.webp";
@@ -86,6 +106,52 @@ const normalizeCategory = (value: unknown): ProductCategory =>
   PRODUCT_CATEGORIES.includes(value as ProductCategory)
     ? (value as ProductCategory)
     : "Tradicional";
+
+const productKindFromCategory = (category: ProductCategory): ProductKind => {
+  if (category === "Kits") return "coffee_bundle";
+  if (category === "Fardos") return "coffee_bale";
+  if (category === "Canecas") return "mug";
+  if (category === "Camisetas") return "shirt";
+  if (category === "Acessórios") return "accessory";
+  if (category === "Outros") return "other";
+  return "coffee";
+};
+
+const normalizeProductKind = (
+  value: unknown,
+  fallback?: ProductKind,
+  category: ProductCategory = "Tradicional",
+): ProductKind => {
+  if (PRODUCT_KINDS.includes(value as ProductKind)) {
+    return value as ProductKind;
+  }
+  return fallback || productKindFromCategory(category);
+};
+
+const normalizeProductOptions = (value: unknown): ProductOption[] => {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((option, index) => {
+      if (!option || typeof option !== "object") return null;
+      const data = option as Partial<ProductOption>;
+      const name = normalizeText(data.name, "", 60);
+      const values = Array.isArray(data.values)
+        ? data.values
+            .map((item) => normalizeText(item, "", 40))
+            .filter(Boolean)
+            .slice(0, 20)
+        : [];
+      if (!name || !values.length) return null;
+      return {
+        id: normalizeText(data.id, slugifyProduct(name) || `opcao-${index + 1}`, 80),
+        name,
+        values,
+        required: data.required !== false,
+      } satisfies ProductOption;
+    })
+    .filter(Boolean) as ProductOption[];
+};
 
 const normalizeIntensity = (value: unknown) => {
   const number = Number(value);
@@ -124,10 +190,20 @@ const normalizeProductContent = (
     throw new Error("Escolha uma imagem enviada para o site.");
   }
 
+  const category = normalizeCategory(input.category || fallback?.category);
+
   const content: ProductContentSettings = {
     custom: Boolean(input.custom),
     slug: normalizeText(input.slug, fallback?.slug || slugifyProduct(input.name || ""), 140),
-    category: normalizeCategory(input.category || fallback?.category),
+    category,
+    productKind: normalizeProductKind(
+      input.productKind,
+      fallback?.productKind,
+      category,
+    ),
+    productOptions: normalizeProductOptions(
+      input.productOptions || fallback?.productOptions,
+    ),
     type: normalizeText(input.type, fallback?.type || "Torrado e moído", 80),
     weight: normalizeText(input.weight, fallback?.weight || "500g", 40),
     roast: normalizeText(input.roast, fallback?.roast || "Média", 60),
@@ -717,13 +793,22 @@ const toAdminProduct = (
   const savedContent = parseProductContent(row);
   if (savedContent.deleted) return null;
   const savedPrice = row ? Number(row.price) : product.price;
+  const category = normalizeCategory(savedContent.category || product.category);
 
   return {
     ...product,
     ...savedContent,
     id: product.id,
     slug: savedContent.slug || product.slug,
-    category: normalizeCategory(savedContent.category || product.category),
+    category,
+    productKind: normalizeProductKind(
+      savedContent.productKind || product.productKind,
+      product.productKind,
+      category,
+    ),
+    productOptions: normalizeProductOptions(
+      savedContent.productOptions || product.productOptions,
+    ),
     intensity: normalizeIntensity(savedContent.intensity ?? product.intensity),
     sensoryNotes: normalizeNotes(
       savedContent.sensoryNotes || product.sensoryNotes,
@@ -749,6 +834,12 @@ const rowToCustomProduct = (row: ProductSettingsRow): AdminProduct | null => {
     name: savedContent.name,
     slug: savedContent.slug || row.product_id.replace(/^custom-/, ""),
     category: normalizeCategory(savedContent.category),
+    productKind: normalizeProductKind(
+      savedContent.productKind,
+      undefined,
+      normalizeCategory(savedContent.category),
+    ),
+    productOptions: normalizeProductOptions(savedContent.productOptions),
     type: savedContent.type || "Torrado e moído",
     weight: savedContent.weight || "500g",
     roast: savedContent.roast || "Média",
@@ -797,6 +888,8 @@ export const getStoreProducts = async () =>
       name: product.name,
       slug: product.slug,
       category: product.category,
+      productKind: product.productKind,
+      productOptions: product.productOptions,
       type: product.type,
       weight: product.weight,
       roast: product.roast,

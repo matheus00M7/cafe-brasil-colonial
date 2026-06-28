@@ -153,7 +153,9 @@ export const createMercadoPagoPayment = async (
       items: order.items.map((item) => ({
         id: item.productId,
         title: item.name,
-        description: item.name,
+        description: item.optionSummary
+          ? `${item.name} - ${item.optionSummary}`
+          : item.name,
         category_id: "food",
         quantity: item.quantity,
         unit_price: item.unitPrice,

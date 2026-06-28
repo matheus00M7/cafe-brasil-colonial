@@ -13,6 +13,11 @@ const categories: CategoryFilter[] = [
   "Gourmet",
   "Especial",
   "Kits",
+  "Fardos",
+  "Canecas",
+  "Camisetas",
+  "Acessórios",
+  "Outros",
 ];
 
 export function ProductFilters({

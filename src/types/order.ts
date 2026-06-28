@@ -1,4 +1,5 @@
 import type { DeliveryMethod } from "./checkout";
+import type { ProductSelectedOption } from "./product";
 
 export type OrderStatus =
   | "pending_payment"
@@ -23,6 +24,8 @@ export type StoredOrderItem = {
   name: string;
   slug: string;
   image: string;
+  selectedOptions?: ProductSelectedOption[];
+  optionSummary?: string;
   quantity: number;
   unitPrice: number;
   total: number;

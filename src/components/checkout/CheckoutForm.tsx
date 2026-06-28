@@ -107,6 +107,7 @@ export function CheckoutForm({
           items: items.map((item) => ({
             productId: item.product.id,
             quantity: item.quantity,
+            selectedOptions: item.selectedOptions || [],
           })),
         }),
       });
