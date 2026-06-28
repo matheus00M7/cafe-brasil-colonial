@@ -12,12 +12,31 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+const oauthErrorMessage = (value?: string | string[]) => {
+  const code = Array.isArray(value) ? value[0] : value;
+  if (!code) return "";
+  if (code === "oauth_config") {
+    return "Login com Google/Apple ainda não foi configurado na Vercel.";
+  }
+  if (code === "oauth_email") {
+    return "Não foi possível confirmar o e-mail dessa conta.";
+  }
+  if (code === "oauth_denied") {
+    return "Cadastro cancelado. Tente novamente quando quiser.";
+  }
+  return "Não foi possível criar a conta com esse provedor. Tente novamente.";
+};
+
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ redirect?: string | string[] }>;
+  searchParams: Promise<{
+    redirect?: string | string[];
+    oauth_error?: string | string[];
+  }>;
 }) {
-  const { redirect: redirectParam } = await searchParams;
+  const { redirect: redirectParam, oauth_error: oauthError } =
+    await searchParams;
   const redirectTo = normalizeCustomerRedirect(redirectParam);
 
   if (await getCustomerSession()) redirect(redirectTo);
@@ -59,7 +78,11 @@ export default async function SignupPage({
           <p className="mb-7 mt-2 text-sm text-brand-ink/55">
             O cadastro leva menos de um minuto.
           </p>
-          <AccountAuthForm mode="signup" redirectTo={redirectTo} />
+          <AccountAuthForm
+            mode="signup"
+            redirectTo={redirectTo}
+            initialError={oauthErrorMessage(oauthError)}
+          />
         </div>
       </Container>
     </section>

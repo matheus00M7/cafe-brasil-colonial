@@ -13,15 +13,18 @@ import {
 export function AccountAuthForm({
   mode,
   redirectTo = "/minha-conta",
+  initialError = "",
 }: {
   mode: "login" | "signup";
   redirectTo?: string;
+  initialError?: string;
 }) {
   const isSignup = mode === "signup";
   const safeRedirect = normalizeCustomerRedirect(redirectTo);
+  const oauthRedirect = encodeURIComponent(safeRedirect);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(initialError);
   const [form, setForm] = useState({
     fullName: "",
     whatsapp: "",
@@ -63,6 +66,33 @@ export function AccountAuthForm({
 
   return (
     <form onSubmit={submit} className="space-y-5">
+      <div className="space-y-3">
+        <Button
+          href={`/api/account/oauth/google?redirect=${oauthRedirect}`}
+          variant="outline"
+          size="lg"
+          className="w-full"
+        >
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-lg font-black text-brand-brown shadow-sm">
+            G
+          </span>
+          Continuar com Google
+        </Button>
+        <Button
+          href={`/api/account/oauth/apple?redirect=${oauthRedirect}`}
+          variant="outline"
+          size="lg"
+          className="w-full"
+        >
+          <span className="text-2xl leading-none"></span>
+          Continuar com Apple
+        </Button>
+      </div>
+      <div className="flex items-center gap-3 text-xs font-extrabold uppercase tracking-[0.18em] text-brand-ink/35">
+        <span className="h-px flex-1 bg-brand-brown/10" />
+        ou use e-mail
+        <span className="h-px flex-1 bg-brand-brown/10" />
+      </div>
       {isSignup && (
         <>
           <Input
