@@ -35,6 +35,7 @@ const required: Array<keyof CheckoutData> = [
   "fullName",
   "whatsapp",
   "email",
+  "cpf",
   "cep",
   "street",
   "number",
@@ -243,7 +244,7 @@ export function CheckoutForm({
               readOnly={signedIn}
             />
             <Input
-              label="CPF"
+              label="CPF *"
               value={data.cpf}
               onChange={(event) => setField("cpf", event.target.value)}
               error={errors.cpf}

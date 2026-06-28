@@ -88,7 +88,13 @@ const statusContent = {
   },
 } as const;
 
-export function OrderStatus({ initialOrder }: { initialOrder: PublicOrder }) {
+export function OrderStatus({
+  initialOrder,
+  accessCpf,
+}: {
+  initialOrder: PublicOrder;
+  accessCpf?: string;
+}) {
   const [order, setOrder] = useState(initialOrder);
   const [copied, setCopied] = useState(false);
   const [trackingCopied, setTrackingCopied] = useState(false);
@@ -105,6 +111,7 @@ export function OrderStatus({ initialOrder }: { initialOrder: PublicOrder }) {
       try {
         const response = await fetch(`/api/orders/${order.id}`, {
           cache: "no-store",
+          headers: accessCpf ? { "x-order-cpf": accessCpf } : undefined,
         });
         if (response.ok) setOrder((await response.json()) as PublicOrder);
       } catch {
@@ -113,7 +120,7 @@ export function OrderStatus({ initialOrder }: { initialOrder: PublicOrder }) {
     }, 10000);
 
     return () => window.clearInterval(timer);
-  }, [order.id, order.status]);
+  }, [accessCpf, order.id, order.status]);
 
   const copyPix = async () => {
     if (!order.pixQrCode) return;

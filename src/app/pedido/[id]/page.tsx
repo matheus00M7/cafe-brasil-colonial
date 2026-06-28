@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { OrderStatus } from "@/components/order/OrderStatus";
+import { OrderCpfAccess } from "@/components/order/OrderCpfAccess";
 import { getOrderById, toPublicOrder } from "@/lib/orders-db";
 import { getCustomerSession } from "@/lib/customer-auth";
 
@@ -22,15 +23,19 @@ export default async function OrderPage({
   const { id } = await params;
   const order = await getOrderById(id);
   if (!order) notFound();
-  if (order.customerAccountId) {
-    const session = await getCustomerSession();
-    if (session?.account.id !== order.customerAccountId) notFound();
-  }
+  const session = await getCustomerSession();
+  const canAccessBySession =
+    Boolean(order.customerAccountId) &&
+    session?.account.id === order.customerAccountId;
 
   return (
     <section className="py-12 sm:py-20">
       <Container>
-        <OrderStatus initialOrder={toPublicOrder(order)} />
+        {canAccessBySession ? (
+          <OrderStatus initialOrder={toPublicOrder(order)} />
+        ) : (
+          <OrderCpfAccess orderId={order.id} />
+        )}
       </Container>
     </section>
   );

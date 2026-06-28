@@ -12,20 +12,35 @@ import { getCustomerSession } from "@/lib/customer-auth";
 
 export const runtime = "nodejs";
 
+const onlyDigits = (value: string | null) =>
+  value ? value.replace(/\D/g, "") : "";
+
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   let order = await getOrderById(id);
   if (!order) {
-    return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Pedido não encontrado." },
+      { status: 404 },
+    );
   }
-  if (order.customerAccountId) {
-    const session = await getCustomerSession();
-    if (session?.account.id !== order.customerAccountId) {
-      return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 });
-    }
+
+  const session = await getCustomerSession();
+  const sessionCanAccess =
+    Boolean(order.customerAccountId) &&
+    session?.account.id === order.customerAccountId;
+  const headerCpf = onlyDigits(request.headers.get("x-order-cpf"));
+  const cpfCanAccess =
+    headerCpf.length === 11 && headerCpf === onlyDigits(order.customer.cpf);
+
+  if (!sessionCanAccess && !cpfCanAccess) {
+    return NextResponse.json(
+      { error: "Pedido não encontrado." },
+      { status: 404 },
+    );
   }
 
   const canRefreshPayment =

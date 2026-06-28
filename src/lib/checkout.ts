@@ -32,6 +32,7 @@ export const validateCheckoutData = (value: unknown): CheckoutData => {
     "fullName",
     "whatsapp",
     "email",
+    "cpf",
     "cep",
     "street",
     "number",
@@ -47,11 +48,9 @@ export const validateCheckoutData = (value: unknown): CheckoutData => {
   if (!/^\S+@\S+\.\S+$/.test(data.email)) {
     throw new Error("Informe um e-mail válido.");
   }
+  if (data.cpf.length !== 11) throw new Error("Informe um CPF válido.");
   if (data.cep.length !== 8) throw new Error("Informe um CEP válido.");
   if (data.state.length !== 2) throw new Error("Informe uma UF válida.");
-  if (data.cpf && data.cpf.length !== 11) {
-    throw new Error("Informe um CPF válido ou deixe o campo vazio.");
-  }
 
   return data;
 };
