@@ -37,17 +37,9 @@ export async function POST(request: NextRequest) {
     };
     const customer = validateCheckoutData(payload.customer);
     const session = await getCustomerSession();
-    if (!session) {
-      return NextResponse.json(
-        {
-          error: "Entre na sua conta para finalizar a compra.",
-          redirectUrl: "/entrar?redirect=/checkout",
-        },
-        { status: 401 },
-      );
+    if (session) {
+      customer.email = session.account.email;
     }
-
-    customer.email = session.account.email;
     const items = await buildOrderItems(payload.items);
     const totals = await calculateOrderTotals(items, customer.deliveryMethod);
     const id = randomUUID();
@@ -55,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     await createOrder({
       id,
-      customerAccountId: session.account.id,
+      customerAccountId: session?.account.id || null,
       orderNumber,
       customer: {
         fullName: customer.fullName,
@@ -78,23 +70,25 @@ export async function POST(request: NextRequest) {
       ...totals,
     });
 
-    await updateCustomerDetails(
-      session.account.id,
-      {
-        fullName: customer.fullName,
-        whatsapp: customer.whatsapp.replace(/\D/g, ""),
-        cpf: customer.cpf.replace(/\D/g, ""),
-      },
-      {
-        cep: customer.cep.replace(/\D/g, ""),
-        street: customer.street,
-        number: customer.number,
-        complement: customer.complement,
-        neighborhood: customer.neighborhood,
-        city: customer.city,
-        state: customer.state.toUpperCase(),
-      },
-    );
+    if (session) {
+      await updateCustomerDetails(
+        session.account.id,
+        {
+          fullName: customer.fullName,
+          whatsapp: customer.whatsapp.replace(/\D/g, ""),
+          cpf: customer.cpf.replace(/\D/g, ""),
+        },
+        {
+          cep: customer.cep.replace(/\D/g, ""),
+          street: customer.street,
+          number: customer.number,
+          complement: customer.complement,
+          neighborhood: customer.neighborhood,
+          city: customer.city,
+          state: customer.state.toUpperCase(),
+        },
+      );
+    }
 
     return NextResponse.json({
       orderId: id,

@@ -15,6 +15,7 @@ const links = [
   ["Produtos", "/produtos"],
   ["Nossa História", "/nossa-historia"],
   ["Origem", "/origem"],
+  ["Rastrear pedido", "/rastrear"],
   ["Atacado", "/atacado"],
   ["Contato", "/contato"],
 ];

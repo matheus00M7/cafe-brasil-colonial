@@ -13,6 +13,7 @@ const links = [
   ["Origem", "/origem"],
   ["Atacado", "/atacado"],
   ["Contato", "/contato"],
+  ["Rastrear pedido", "/rastrear"],
   ["Minha conta", "/minha-conta"],
   ["Privacidade", "/privacidade"],
 ];

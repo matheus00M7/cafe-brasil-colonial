@@ -209,13 +209,21 @@ export function CheckoutForm({
             </p>
           ) : (
             <p className="mt-2 text-sm text-brand-ink/55">
+              VocÃª pode comprar sem login. Depois, acompanhe pelo CPF em{" "}
+              <Link
+                href="/rastrear"
+                className="font-extrabold text-brand-green hover:underline"
+              >
+                Rastrear pedido
+              </Link>
+              . Se preferir,{" "}
               <Link
                 href="/entrar"
                 className="font-extrabold text-brand-green hover:underline"
               >
-                Entre na sua conta
+                entre na sua conta
               </Link>{" "}
-              para salvar os dados e acompanhar o pedido pelo painel.
+              para salvar os dados e ver tudo pelo painel.
             </p>
           )}
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
