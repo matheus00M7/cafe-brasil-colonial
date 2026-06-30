@@ -180,7 +180,15 @@ export function CheckoutForm({
               compra sem sair do site.
             </p>
           </div>
-          <PaymentBrick orderId={session.orderId} amount={session.total} />
+          <PaymentBrick
+            orderId={session.orderId}
+            amount={session.total}
+            payer={{
+              fullName: data.fullName,
+              email: data.email,
+              cpf: data.cpf,
+            }}
+          />
         </div>
         <OrderSummary
           items={items}

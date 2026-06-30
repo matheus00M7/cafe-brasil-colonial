@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { LockKeyhole, PackageCheck, ShieldCheck } from "lucide-react";
 import type { PublicOrder } from "@/types/order";
 import { Button } from "@/components/ui/Button";
@@ -15,6 +15,58 @@ export function OrderCpfAccess({ orderId }: { orderId: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const unlockWithCpf = useCallback(
+    async (cpfValue: string, options?: { silent?: boolean }) => {
+      const cpfDigits = onlyDigits(cpfValue);
+      if (cpfDigits.length !== 11) {
+        if (!options?.silent) setError("Informe o CPF com 11 números.");
+        return;
+      }
+
+      setLoading(true);
+      if (!options?.silent) setError("");
+      try {
+        const response = await fetch(`/api/orders/${orderId}/access`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cpf: cpfDigits }),
+        });
+        const payload = (await response.json()) as PublicOrder & {
+          error?: string;
+        };
+        if (!response.ok) {
+          throw new Error(
+            payload.error || "Não foi possível localizar o pedido.",
+          );
+        }
+        window.sessionStorage.setItem(`cbc_order_access_${orderId}`, cpfDigits);
+        setCpf(cpfDigits);
+        setOrder(payload);
+      } catch (accessError) {
+        if (!options?.silent) {
+          setError(
+            accessError instanceof Error
+              ? accessError.message
+              : "Não foi possível liberar o rastreio.",
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [orderId],
+  );
+
+  useEffect(() => {
+    const savedCpf = window.sessionStorage.getItem(
+      `cbc_order_access_${orderId}`,
+    );
+
+    if (savedCpf && onlyDigits(savedCpf).length === 11) {
+      void unlockWithCpf(savedCpf, { silent: true });
+    }
+  }, [orderId, unlockWithCpf]);
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const cpfDigits = onlyDigits(cpf);
@@ -23,30 +75,7 @@ export function OrderCpfAccess({ orderId }: { orderId: string }) {
       return;
     }
 
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch(`/api/orders/${orderId}/access`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cpf: cpfDigits }),
-      });
-      const payload = (await response.json()) as PublicOrder & {
-        error?: string;
-      };
-      if (!response.ok) {
-        throw new Error(payload.error || "Não foi possível localizar o pedido.");
-      }
-      setOrder(payload);
-    } catch (accessError) {
-      setError(
-        accessError instanceof Error
-          ? accessError.message
-          : "Não foi possível liberar o rastreio.",
-      );
-    } finally {
-      setLoading(false);
-    }
+    await unlockWithCpf(cpfDigits);
   };
 
   if (order) {
@@ -65,9 +94,8 @@ export function OrderCpfAccess({ orderId }: { orderId: string }) {
         Informe o CPF da compra
       </h1>
       <p className="mt-4 leading-7 text-brand-ink/60">
-        Para proteger os dados do pedido, digite o mesmo CPF informado na hora
-        da entrega. Depois disso, você consegue acompanhar pagamento, preparo e
-        rastreio.
+        Para proteger os dados do pedido, digite o mesmo CPF informado na compra.
+        Se você acabou de pagar neste aparelho, o rastreio abre automaticamente.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-7 space-y-5">

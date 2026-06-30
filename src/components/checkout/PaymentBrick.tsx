@@ -7,6 +7,12 @@ import { CreditCard, LockKeyhole, RefreshCw } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import type { PaymentResult } from "@/types/checkout";
 
+type PaymentPayer = {
+  fullName: string;
+  email: string;
+  cpf: string;
+};
+
 type BrickController = {
   unmount: () => void;
 };
@@ -30,12 +36,47 @@ declare global {
   }
 }
 
+const onlyDigits = (value = "") => value.replace(/\D/g, "");
+
+const splitName = (fullName: string) => {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.slice(1).join(" ") || parts[0] || "",
+  };
+};
+
+const buildBrickPayer = (payer?: PaymentPayer) => {
+  if (!payer) return undefined;
+
+  const email = payer.email.trim();
+  const cpf = onlyDigits(payer.cpf);
+  const { firstName, lastName } = splitName(payer.fullName);
+
+  if (!email && !firstName && cpf.length !== 11) return undefined;
+
+  return {
+    email: email || undefined,
+    firstName: firstName || undefined,
+    lastName: lastName || undefined,
+    identification:
+      cpf.length === 11
+        ? {
+            type: "CPF",
+            number: cpf,
+          }
+        : undefined,
+  };
+};
+
 export function PaymentBrick({
   orderId,
   amount,
+  payer,
 }: {
   orderId: string;
   amount: number;
+  payer?: PaymentPayer;
 }) {
   const router = useRouter();
   const { clearCart } = useCart();
@@ -47,6 +88,9 @@ export function PaymentBrick({
   const [brickVersion, setBrickVersion] = useState(0);
   const [error, setError] = useState("");
   const publicKey = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY || "";
+  const payerCpf = payer?.cpf || "";
+  const payerEmail = payer?.email || "";
+  const payerFullName = payer?.fullName || "";
 
   useEffect(() => {
     if (
@@ -60,6 +104,11 @@ export function PaymentBrick({
 
     mountedRef.current = true;
     const mercadoPago = new window.MercadoPago(publicKey, { locale: "pt-BR" });
+    const brickPayer = buildBrickPayer({
+      fullName: payerFullName,
+      email: payerEmail,
+      cpf: payerCpf,
+    });
 
     const mountBrick = async () => {
       try {
@@ -67,7 +116,10 @@ export function PaymentBrick({
           "payment",
           "mercado-pago-payment-brick",
           {
-            initialization: { amount },
+            initialization: {
+              amount,
+              ...(brickPayer ? { payer: brickPayer } : {}),
+            },
             customization: {
               visual: {
                 style: {
@@ -132,7 +184,16 @@ export function PaymentBrick({
                   throw new Error(message);
                 }
 
-                if (payload.status !== "rejected") clearCart();
+                if (payload.status !== "rejected") {
+                  const cleanCpf = onlyDigits(payerCpf);
+                  if (cleanCpf.length === 11) {
+                    window.sessionStorage.setItem(
+                      `cbc_order_access_${orderId}`,
+                      cleanCpf,
+                    );
+                  }
+                  clearCart();
+                }
                 router.push(payload.redirectUrl);
               },
               onError: (brickError: unknown) => {
@@ -169,6 +230,9 @@ export function PaymentBrick({
     brickVersion,
     clearCart,
     orderId,
+    payerCpf,
+    payerEmail,
+    payerFullName,
     publicKey,
     router,
     scriptReady,
