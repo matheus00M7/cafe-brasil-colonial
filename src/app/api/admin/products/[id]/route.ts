@@ -112,7 +112,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   if (!(await getAdminSession())) {
-    return NextResponse.json({ error: "NÃ£o autorizado." }, { status: 401 });
+    return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }
 
   try {
@@ -123,7 +123,7 @@ export async function DELETE(
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "NÃ£o foi possÃ­vel excluir.",
+          error instanceof Error ? error.message : "Não foi possível excluir.",
       },
       { status: 400 },
     );
