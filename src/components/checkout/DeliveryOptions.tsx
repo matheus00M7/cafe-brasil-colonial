@@ -8,7 +8,7 @@ const options = [
   {
     value: "correios",
     title: "Correios",
-    text: "Frete grátis durante os testes de pagamento.",
+    text: "Frete calculado antes do pagamento, com opção de envio para todo o Brasil.",
     icon: Truck,
   },
   {
