@@ -217,7 +217,7 @@ export function CheckoutForm({
             </p>
           ) : (
             <p className="mt-2 text-sm text-brand-ink/55">
-              VocÃª pode comprar sem login. Depois, acompanhe pelo CPF em{" "}
+              Você pode comprar sem login. Depois, acompanhe pelo CPF em{" "}
               <Link
                 href="/rastrear"
                 className="font-extrabold text-brand-green hover:underline"
