@@ -31,7 +31,7 @@ const normalizeProductOptions = (value: unknown): ProductOption[] =>
 
 export async function POST(request: Request) {
   if (!(await getAdminSession())) {
-    return NextResponse.json({ error: "NÃ£o autorizado." }, { status: 401 });
+    return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }
 
   try {
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "NÃ£o foi possÃ­vel criar.",
+          error instanceof Error ? error.message : "Não foi possível criar.",
       },
       { status: 400 },
     );
