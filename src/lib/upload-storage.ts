@@ -30,6 +30,9 @@ const encodeObjectKey = (key: string) =>
     .map((part) => encodeURIComponent(part))
     .join("/");
 
+const isAllowedUploadedImageKey = (key: string) =>
+  /^admin\/\d{10,}-[0-9a-f]{8}\.(jpg|png|webp)$/i.test(key);
+
 const redactStorageError = (message: string) =>
   message
     .replace(/Bearer\s+[A-Za-z0-9._:-]{8,}/gi, "Bearer ***")
@@ -135,7 +138,9 @@ export const fetchImageFromStorage = async (objectKey: string) => {
     .filter(Boolean)
     .join("/");
 
-  if (!cleanedKey) throw new Error("Imagem não encontrada.");
+  if (!cleanedKey || !isAllowedUploadedImageKey(cleanedKey)) {
+    throw new Error("Imagem não encontrada.");
+  }
 
   const response = await storageRequest(
     `object/${uploadsBucket}/${encodeObjectKey(cleanedKey)}`,

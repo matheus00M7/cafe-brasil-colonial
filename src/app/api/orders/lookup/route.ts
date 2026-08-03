@@ -28,6 +28,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!checkRateLimit(`orders:lookup:cpf:${cpf}`, 8, 15 * 60_000)) {
+      return NextResponse.json(
+        { error: "Muitas consultas para este CPF. Tente mais tarde." },
+        { status: 429 },
+      );
+    }
+
     const orders = await listOrders({ limit: 500 });
     const matches = orders
       .filter((order) => onlyDigits(order.customer.cpf) === cpf)

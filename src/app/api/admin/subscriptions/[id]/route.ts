@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
+import { assertSameOrigin } from "@/lib/request-security";
 import { changeSubscriptionStatus } from "@/lib/subscriptions/service";
 import {
   normalizeSubscriptionError,
@@ -11,6 +12,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    assertSameOrigin(request);
+
     if (!(await getAdminSession())) {
       throw new SubscriptionError(
         "Não autorizado.",

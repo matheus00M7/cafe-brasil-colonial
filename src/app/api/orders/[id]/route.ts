@@ -9,6 +9,8 @@ import {
   paymentUpdateFromResponse,
 } from "@/lib/mercado-pago";
 import { getCustomerSession } from "@/lib/customer-auth";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { requestIp } from "@/lib/request-security";
 
 export const runtime = "nodejs";
 
@@ -20,6 +22,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const ip = requestIp(request);
+  if (!checkRateLimit(`orders:get:${ip}:${id}`, 30, 15 * 60_000)) {
+    return NextResponse.json(
+      { error: "Muitas consultas. Aguarde alguns minutos." },
+      { status: 429 },
+    );
+  }
+
   let order = await getOrderById(id);
   if (!order) {
     return NextResponse.json(

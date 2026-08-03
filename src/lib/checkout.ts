@@ -2,8 +2,8 @@ import { getAdminProducts } from "@/lib/orders-db";
 import type { CheckoutCartItem, CheckoutData } from "@/types/checkout";
 import type { StoredOrderItem } from "@/types/order";
 
-const clean = (value: unknown) =>
-  typeof value === "string" ? value.trim() : "";
+const clean = (value: unknown, max = 200) =>
+  typeof value === "string" ? value.trim().slice(0, max) : "";
 
 export const validateCheckoutData = (value: unknown): CheckoutData => {
   if (!value || typeof value !== "object") {
@@ -12,17 +12,17 @@ export const validateCheckoutData = (value: unknown): CheckoutData => {
 
   const input = value as Record<string, unknown>;
   const data: CheckoutData = {
-    fullName: clean(input.fullName),
-    whatsapp: clean(input.whatsapp),
-    email: clean(input.email).toLowerCase(),
-    cpf: clean(input.cpf).replace(/\D/g, ""),
-    cep: clean(input.cep).replace(/\D/g, ""),
-    street: clean(input.street),
-    number: clean(input.number),
-    complement: clean(input.complement),
-    neighborhood: clean(input.neighborhood),
-    city: clean(input.city),
-    state: clean(input.state).toUpperCase(),
+    fullName: clean(input.fullName, 160),
+    whatsapp: clean(input.whatsapp, 30),
+    email: clean(input.email, 180).toLowerCase(),
+    cpf: clean(input.cpf, 30).replace(/\D/g, ""),
+    cep: clean(input.cep, 20).replace(/\D/g, ""),
+    street: clean(input.street, 200),
+    number: clean(input.number, 40),
+    complement: clean(input.complement, 120),
+    neighborhood: clean(input.neighborhood, 120),
+    city: clean(input.city, 120),
+    state: clean(input.state, 2).toUpperCase(),
     deliveryMethod:
       input.deliveryMethod === "retirada" ? "retirada" : "correios",
     notes: clean(input.notes).slice(0, 500),
@@ -60,6 +60,10 @@ export const buildOrderItems = async (
 ): Promise<StoredOrderItem[]> => {
   if (!Array.isArray(value) || value.length === 0) {
     throw new Error("O carrinho está vazio.");
+  }
+
+  if (value.length > 50) {
+    throw new Error("O carrinho tem itens demais. Revise a compra.");
   }
 
   const products = await getAdminProducts();

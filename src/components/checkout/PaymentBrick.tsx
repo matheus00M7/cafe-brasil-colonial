@@ -196,11 +196,11 @@ export function PaymentBrick({
                 }
                 router.push(payload.redirectUrl);
               },
-              onError: (brickError: unknown) => {
+              onError: () => {
                 // O Brick também usa este callback para avisos recuperáveis de
                 // validação. Não use console.error aqui: o Next transforma isso
                 // em uma tela de erro durante o desenvolvimento.
-                console.warn("Aviso do formulário do Mercado Pago:", brickError);
+                console.warn("Aviso do formulário do Mercado Pago.");
                 if (!brickReadyRef.current) {
                   setError(
                     "O Mercado Pago demorou para carregar. Recarregue as formas de pagamento.",
@@ -210,8 +210,8 @@ export function PaymentBrick({
             },
           },
         );
-      } catch (mountError) {
-        console.warn("Não foi possível montar o Payment Brick:", mountError);
+      } catch {
+        console.warn("Não foi possível montar o Payment Brick.");
         setError(
           "Não foi possível iniciar o pagamento. Recarregue as formas de pagamento.",
         );

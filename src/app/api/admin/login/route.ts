@@ -6,10 +6,13 @@ import {
   verifyAdminCredentials,
 } from "@/lib/admin-auth";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { assertSameOrigin } from "@/lib/request-security";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  assertSameOrigin(request);
+
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || "local";
   if (!checkRateLimit(`admin-login:${ip}`, 6, 10 * 60_000)) {
     return NextResponse.json(

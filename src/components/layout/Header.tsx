@@ -3,21 +3,32 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, ShoppingBag, UserRound } from "lucide-react";
+import {
+  ChevronDown,
+  Menu,
+  PackageCheck,
+  ShoppingBag,
+  UserRound,
+} from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { useSiteContent } from "@/context/SiteContentContext";
 import { MobileMenu } from "./MobileMenu";
 
-const links = [
+const mainLinks = [
   ["Início", "/"],
   ["Produtos", "/produtos"],
-  ["Nossa História", "/nossa-historia"],
-  ["Origem", "/origem"],
-  ["Rastrear pedido", "/rastrear"],
+];
+
+const supportLinks = [
   ["Atacado", "/atacado"],
   ["Contato", "/contato"],
+];
+
+const brandLinks = [
+  ["Nossa História", "/nossa-historia"],
+  ["Origem", "/origem"],
 ];
 
 export function Header({
@@ -50,8 +61,34 @@ export function Header({
               priority
             />
           </Link>
-          <nav className="hidden items-center gap-5 lg:flex">
-            {links.map(([label, href]) => (
+          <nav className="hidden items-center gap-4 lg:flex">
+            {mainLinks.map(([label, href]) => (
+              <Link
+                key={href}
+                href={href}
+                className="text-sm font-bold text-brand-ink/75 transition hover:text-brand-brown"
+              >
+                {label}
+              </Link>
+            ))}
+            <details className="group relative">
+              <summary className="flex cursor-pointer list-none items-center gap-1 text-sm font-bold text-brand-ink/75 transition hover:text-brand-brown [&::-webkit-details-marker]:hidden">
+                Marca
+                <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
+              </summary>
+              <div className="absolute left-1/2 top-8 w-56 -translate-x-1/2 rounded-3xl border border-brand-brown/10 bg-white p-2 shadow-soft">
+                {brandLinks.map(([label, href]) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="block rounded-2xl px-4 py-3 text-sm font-extrabold text-brand-brown transition hover:bg-brand-mist"
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            </details>
+            {supportLinks.map(([label, href]) => (
               <Link
                 key={href}
                 href={href}
@@ -62,6 +99,15 @@ export function Header({
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            <Link
+              href="/rastrear"
+              className="hidden h-11 items-center gap-2 rounded-full border border-brand-green/20 bg-white px-4 text-sm font-extrabold text-brand-green transition hover:border-brand-green hover:bg-brand-green hover:text-white md:flex"
+              aria-label="Rastrear pedido"
+              title="Rastrear pedido"
+            >
+              <PackageCheck className="h-5 w-5" />
+              <span className="hidden xl:inline">Rastrear</span>
+            </Link>
             <Link
               href={customer ? "/minha-conta" : "/entrar"}
               className="relative flex h-11 w-11 items-center justify-center rounded-full border border-brand-brown/15 bg-white text-brand-brown transition hover:border-brand-brown"

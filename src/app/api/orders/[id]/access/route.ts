@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOrderById, toPublicOrder } from "@/lib/orders-db";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { assertSameOrigin, requestIp } from "@/lib/request-security";
 
 export const runtime = "nodejs";
 
@@ -10,8 +12,18 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  assertSameOrigin(request);
+
   try {
     const { id } = await params;
+    const ip = requestIp(request);
+    if (!checkRateLimit(`orders:access:${ip}:${id}`, 6, 15 * 60_000)) {
+      return NextResponse.json(
+        { error: "Muitas tentativas. Aguarde alguns minutos." },
+        { status: 429 },
+      );
+    }
+
     const payload = (await request.json()) as { cpf?: string };
     const cpf = onlyDigits(payload.cpf);
     const order = await getOrderById(id);

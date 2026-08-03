@@ -449,6 +449,13 @@ const parseOrder = (row: OrderRow | undefined): StoredOrder | null => {
   };
 };
 
+const redactDatabaseError = (message: string) =>
+  message
+    .replace(/Bearer\s+[A-Za-z0-9._:-]{8,}/gi, "Bearer ***")
+    .replace(/sb_secret_[A-Za-z0-9._:-]{8,}/g, "sb_secret_***")
+    .replace(/apikey['"]?\s*[:=]\s*['"]?[A-Za-z0-9._:-]{8,}/gi, "apikey=***")
+    .slice(0, 500);
+
 const supabaseRequest = async <T>(path: string, init?: RequestInit) => {
   if (!supabaseUrl || !supabaseKey) {
     throw new Error("O banco online não está configurado.");
@@ -465,7 +472,7 @@ const supabaseRequest = async <T>(path: string, init?: RequestInit) => {
   });
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`Falha no banco de pedidos: ${detail}`);
+    throw new Error(`Falha no banco de pedidos: ${redactDatabaseError(detail)}`);
   }
   return (await response.json()) as T;
 };

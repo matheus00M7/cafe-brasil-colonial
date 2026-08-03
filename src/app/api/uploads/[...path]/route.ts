@@ -16,6 +16,7 @@ export async function GET(
     const cacheControl = response.headers.get("cache-control");
 
     if (contentType) headers.set("Content-Type", contentType);
+    headers.set("X-Content-Type-Options", "nosniff");
     headers.set(
       "Cache-Control",
       cacheControl || "public, max-age=31536000, immutable",

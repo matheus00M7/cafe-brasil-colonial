@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
+import { assertSameOrigin } from "@/lib/request-security";
 import {
   hasSupabaseUploadStorage,
   uploadImageToStorage,
@@ -17,7 +18,31 @@ const allowedTypes: Record<string, string> = {
   "image/webp": "webp",
 };
 
+const detectImageExtension = (buffer: Buffer) => {
+  if (buffer.length < 12) return "";
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return "jpg";
+  }
+  if (
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47
+  ) {
+    return "png";
+  }
+  if (
+    buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
+    buffer.subarray(8, 12).toString("ascii") === "WEBP"
+  ) {
+    return "webp";
+  }
+  return "";
+};
+
 export async function POST(request: Request) {
+  assertSameOrigin(request);
+
   if (!(await getAdminSession())) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }
@@ -48,6 +73,15 @@ export async function POST(request: Request) {
       );
     }
 
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const detectedExtension = detectImageExtension(bytes);
+    if (!detectedExtension || detectedExtension !== extension) {
+      return NextResponse.json(
+        { error: "O arquivo enviado não parece ser uma imagem válida." },
+        { status: 400 },
+      );
+    }
+
     const fileName = `${Date.now()}-${randomUUID().slice(0, 8)}.${extension}`;
 
     if (hasSupabaseUploadStorage()) {
@@ -70,10 +104,7 @@ export async function POST(request: Request) {
 
     const uploadsDirectory = join(process.cwd(), "public", "uploads");
     await mkdir(uploadsDirectory, { recursive: true });
-    await writeFile(
-      join(uploadsDirectory, fileName),
-      Buffer.from(await file.arrayBuffer()),
-    );
+    await writeFile(join(uploadsDirectory, fileName), bytes);
 
     return NextResponse.json({ ok: true, path: `/uploads/${fileName}` });
   } catch (error) {

@@ -10,13 +10,13 @@ const defaultMessage =
 
 export function FloatingWhatsApp() {
   const content = useSiteContent();
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const whatsappUrl = createWhatsAppUrl(defaultMessage, content.brand.whatsapp);
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       {open && (
-        <div className="max-w-[280px] rounded-3xl border border-brand-green/20 bg-white p-4 shadow-soft">
+        <div className="pointer-events-auto w-[min(calc(100vw-2rem),320px)] rounded-3xl border border-brand-green/20 bg-white p-4 shadow-soft">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brand-green">
@@ -51,17 +51,31 @@ export function FloatingWhatsApp() {
         </div>
       )}
 
-      <a
-        href={whatsappUrl}
-        target="_blank"
-        rel="noreferrer"
-        onMouseEnter={() => setOpen(true)}
-        className="group inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-soft ring-4 ring-white transition hover:scale-105 hover:bg-[#1ebe5d]"
-        aria-label="Abrir atendimento pelo WhatsApp"
-      >
-        <span className="absolute inline-flex h-16 w-16 animate-ping rounded-full bg-[#25D366]/35 opacity-75 group-hover:hidden" />
-        <MessageCircle className="relative h-8 w-8" />
-      </a>
+      <div className="pointer-events-auto flex items-center gap-2">
+        {!open && (
+          <span className="hidden rounded-full border border-brand-green/15 bg-white px-4 py-2 text-xs font-extrabold text-brand-brown shadow-card sm:inline-flex">
+            Atendimento
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={() => setOpen((current) => !current)}
+          className="group relative inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-soft ring-4 ring-white transition hover:scale-105 hover:bg-[#1ebe5d] sm:h-16 sm:w-16"
+          aria-label={
+            open ? "Fechar atendimento do WhatsApp" : "Abrir atendimento pelo WhatsApp"
+          }
+          aria-expanded={open}
+        >
+          {!open && (
+            <span className="absolute inline-flex h-14 w-14 animate-ping rounded-full bg-[#25D366]/30 opacity-75 group-hover:hidden sm:h-16 sm:w-16" />
+          )}
+          {open ? (
+            <X className="relative h-7 w-7" />
+          ) : (
+            <MessageCircle className="relative h-7 w-7 sm:h-8 sm:w-8" />
+          )}
+        </button>
+      </div>
     </div>
   );
 }

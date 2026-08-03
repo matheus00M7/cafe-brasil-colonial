@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
+import { cleanAdminImagePath } from "@/lib/admin-product-security";
 import { getSiteContent, updateSiteContent } from "@/lib/orders-db";
+import { assertSameOrigin } from "@/lib/request-security";
 import type { SiteContent } from "@/types/site-content";
 
 const clean = (value: unknown, max: number) =>
   typeof value === "string" ? value.trim().slice(0, max) : "";
 
 const imagePath = (value: unknown) => {
-  const path = clean(value, 500);
-  return path.startsWith("/") ? path : "";
+  return cleanAdminImagePath(value);
 };
 
 const href = (value: unknown) => {
@@ -29,6 +30,8 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  assertSameOrigin(request);
+
   if (!(await getAdminSession())) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }

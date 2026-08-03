@@ -59,6 +59,13 @@ const databaseConfigurationError = () =>
     "Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY na Vercel para usar contas de clientes.",
   );
 
+const redactDatabaseError = (message: string) =>
+  message
+    .replace(/Bearer\s+[A-Za-z0-9._:-]{8,}/gi, "Bearer ***")
+    .replace(/sb_secret_[A-Za-z0-9._:-]{8,}/g, "sb_secret_***")
+    .replace(/apikey['"]?\s*[:=]\s*['"]?[A-Za-z0-9._:-]{8,}/gi, "apikey=***")
+    .slice(0, 500);
+
 const getLocalDatabase = async () => {
   if (localDatabaseUnavailable) {
     throw databaseConfigurationError();
@@ -129,7 +136,9 @@ const supabaseRequest = async <T>(path: string, init?: RequestInit) => {
   });
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`Falha no banco de clientes: ${detail.slice(0, 500)}`);
+    throw new Error(
+      `Falha no banco de clientes: ${redactDatabaseError(detail)}`,
+    );
   }
   const raw = await response.text();
   if (!raw) return undefined as T;

@@ -59,6 +59,8 @@ export async function GET() {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
       "Content-Disposition": `attachment; filename="pedidos-cafe-brasil-colonial.csv"`,
+      "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }

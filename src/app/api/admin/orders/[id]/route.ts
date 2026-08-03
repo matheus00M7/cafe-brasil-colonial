@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { updateOrderAdmin } from "@/lib/orders-db";
+import { assertSameOrigin } from "@/lib/request-security";
 import type { FulfillmentStatus } from "@/types/order";
 
 const fulfillmentStatuses = new Set<FulfillmentStatus>([
@@ -16,6 +17,8 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  assertSameOrigin(request);
+
   if (!(await getAdminSession())) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }

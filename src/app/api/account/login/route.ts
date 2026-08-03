@@ -18,7 +18,15 @@ export async function POST(request: Request) {
       password?: string;
     };
     const email = (payload.email || "").trim().toLowerCase();
-    const rateKey = `account:login:${requestIp(request)}:${email}`;
+    const ip = requestIp(request);
+    if (!checkRateLimit(`account:login-ip:${ip}`, 20, 15 * 60_000)) {
+      return NextResponse.json(
+        { error: "Muitas tentativas. Aguarde alguns minutos." },
+        { status: 429 },
+      );
+    }
+
+    const rateKey = `account:login:${ip}:${email}`;
     if (!checkRateLimit(rateKey, 8, 15 * 60_000)) {
       return NextResponse.json(
         { error: "Muitas tentativas. Aguarde alguns minutos." },

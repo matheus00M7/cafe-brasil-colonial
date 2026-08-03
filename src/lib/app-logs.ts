@@ -165,7 +165,12 @@ const supabaseRequest = async <T>(path: string, init?: RequestInit) => {
     cache: "no-store",
   });
   if (!response.ok) {
-    throw new Error(`Falha no banco de logs: ${(await response.text()).slice(0, 500)}`);
+    throw new Error(
+      `Falha no banco de logs: ${redactString(await response.text()).slice(
+        0,
+        500,
+      )}`,
+    );
   }
   const text = await response.text();
   if (!text) return undefined as T;

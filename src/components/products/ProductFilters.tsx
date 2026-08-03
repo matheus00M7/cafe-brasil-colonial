@@ -32,8 +32,8 @@ export function ProductFilters({
   onSortChange: (sort: SortOption) => void;
 }) {
   return (
-    <div className="mb-9 flex flex-col gap-5 rounded-3xl border border-brand-brown/10 bg-white p-4 shadow-card lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex gap-2 overflow-x-auto pb-1">
+    <div className="mb-8 flex flex-col gap-4 rounded-3xl border border-brand-brown/10 bg-white p-3 shadow-card sm:mb-9 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {categories.map((item) => (
           <button
             key={item}
@@ -50,12 +50,12 @@ export function ProductFilters({
           </button>
         ))}
       </div>
-      <label className="flex shrink-0 items-center gap-3 text-sm font-bold text-brand-ink/70">
+      <label className="flex shrink-0 items-center justify-between gap-3 rounded-2xl bg-brand-paper px-3 py-2 text-sm font-bold text-brand-ink/70 sm:justify-start sm:bg-transparent sm:px-0 sm:py-0">
         Ordenar:
         <select
           value={sort}
           onChange={(event) => onSortChange(event.target.value as SortOption)}
-          className="min-h-11 rounded-full border border-brand-brown/15 bg-brand-paper px-4 outline-none focus:border-brand-green"
+          className="min-h-11 rounded-full border border-brand-brown/15 bg-white px-4 outline-none focus:border-brand-green sm:bg-brand-paper"
         >
           <option value="relevancia">Destaques</option>
           <option value="menor">Menor preço</option>
