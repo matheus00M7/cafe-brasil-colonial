@@ -15,6 +15,15 @@ export function WhatsAppButton({
   className?: string;
 }) {
   const content = useSiteContent();
+  if (!content.brand.whatsapp.replace(/\D/g, "")) {
+    return (
+      <Button href="/contato" variant="green" className={className}>
+        <MessageCircle className="h-5 w-5" />
+        {children}
+      </Button>
+    );
+  }
+
   return (
     <Button
       href={createWhatsAppUrl(message, content.brand.whatsapp)}

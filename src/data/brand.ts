@@ -31,7 +31,12 @@ export const brand: BrandConfig = {
     markDark: "/brand/brand-mark-dark.png",
     markLight: "/brand/brand-mark-light.png",
   },
-  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5500000000000",
+  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "5533988332140",
+  phone: "(33) 3722-1229",
   instagram: process.env.NEXT_PUBLIC_INSTAGRAM_URL || "",
-  email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "",
+  email:
+    process.env.NEXT_PUBLIC_CONTACT_EMAIL ||
+    "vendas@cafebrasilcolonial.com.br",
+  addressLine1: "Rua Rosalvo de Assis Leebão nº 158",
+  addressLine2: "Planalto, Mata Verde - MG",
 };

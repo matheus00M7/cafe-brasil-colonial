@@ -17,8 +17,11 @@ export type SiteContent = {
     logoDark: string;
     logoLight: string;
     whatsapp: string;
+    phone: string;
     instagram: string;
     email: string;
+    addressLine1: string;
+    addressLine2: string;
     cnpj: string;
     announcement: string;
   };

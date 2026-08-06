@@ -11,6 +11,8 @@ const defaultMessage =
 export function FloatingWhatsApp() {
   const content = useSiteContent();
   const [open, setOpen] = useState(false);
+  if (!content.brand.whatsapp.replace(/\D/g, "")) return null;
+
   const whatsappUrl = createWhatsAppUrl(defaultMessage, content.brand.whatsapp);
 
   return (

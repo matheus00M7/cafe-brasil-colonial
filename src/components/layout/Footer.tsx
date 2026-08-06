@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Instagram, Mail, MessageCircle } from "lucide-react";
+import { Instagram, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { createWhatsAppUrl } from "@/lib/whatsapp";
 import { useSiteContent } from "@/context/SiteContentContext";
@@ -15,11 +15,17 @@ const links = [
   ["Contato", "/contato"],
   ["Rastrear pedido", "/rastrear"],
   ["Minha conta", "/minha-conta"],
+  ["Termos de uso", "/termos"],
+  ["Trocas e devoluções", "/trocas-e-devolucoes"],
   ["Privacidade", "/privacidade"],
 ];
 
 export function Footer() {
   const content = useSiteContent();
+  const address = [
+    content.brand.addressLine1,
+    content.brand.addressLine2,
+  ].filter(Boolean).join(", ");
   return (
     <footer className="relative overflow-hidden bg-brand-brown py-16 text-white">
       <div
@@ -41,18 +47,20 @@ export function Footer() {
             {content.brand.description}
           </p>
           <div className="mt-6 flex gap-3">
-            <a
-              href={createWhatsAppUrl(
-                "Olá! Vim pelo site do Café Brasil Colonial e gostaria de mais informações.",
-                content.brand.whatsapp,
-              )}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-full border border-white/20 p-3 hover:bg-white/10"
-              aria-label="WhatsApp"
-            >
-              <MessageCircle className="h-5 w-5" />
-            </a>
+            {content.brand.whatsapp && (
+              <a
+                href={createWhatsAppUrl(
+                  "Olá! Vim pelo site do Café Brasil Colonial e gostaria de mais informações.",
+                  content.brand.whatsapp,
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-full border border-white/20 p-3 hover:bg-white/10"
+                aria-label="WhatsApp"
+              >
+                <MessageCircle className="h-5 w-5" />
+              </a>
+            )}
             {content.brand.instagram && (
               <a
                 href={content.brand.instagram}
@@ -72,6 +80,20 @@ export function Footer() {
               >
                 <Mail className="h-5 w-5" />
               </a>
+            )}
+          </div>
+          <div className="mt-6 space-y-3 text-sm text-white/65">
+            {content.brand.phone && (
+              <p className="flex items-start gap-2">
+                <Phone className="mt-0.5 h-4 w-4 shrink-0 text-brand-cream" />
+                {content.brand.phone}
+              </p>
+            )}
+            {address && (
+              <p className="flex items-start gap-2">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-cream" />
+                {address}
+              </p>
             )}
           </div>
         </div>

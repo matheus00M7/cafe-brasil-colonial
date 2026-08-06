@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instagram, Mail, MessageCircle, Store } from "lucide-react";
+import { Instagram, Mail, MapPin, MessageCircle, Phone, Store } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Badge } from "@/components/ui/Badge";
 import { WhatsAppButton } from "@/components/ui/WhatsAppButton";
@@ -9,11 +9,19 @@ import { getSiteContent } from "@/lib/orders-db";
 export const metadata: Metadata = {
   title: "Contato",
   description:
-    "Fale com o Café Brasil Colonial pelo WhatsApp, e-mail ou redes sociais.",
+    "Fale com o Café Brasil Colonial pelo WhatsApp, telefone, e-mail ou redes sociais.",
 };
 
 export default async function ContactPage() {
   const content = await getSiteContent();
+  const address = [
+    content.brand.addressLine1,
+    content.brand.addressLine2,
+  ].filter(Boolean).join(", ");
+  const phoneDigits = content.brand.phone.replace(/\D/g, "");
+  const phoneHref = phoneDigits
+    ? `tel:+${phoneDigits.startsWith("55") ? phoneDigits : `55${phoneDigits}`}`
+    : "";
   return (
     <>
       <section className="bg-brand-cream/45 py-16 sm:py-24">
@@ -36,12 +44,41 @@ export default async function ContactPage() {
             <p className="mt-3 leading-7 text-white/65">
               Canal direto para pedidos, dúvidas, frete e atendimento comercial.
             </p>
-            <WhatsAppButton
-              message="Olá! Vim pelo site do Café Brasil Colonial e gostaria de mais informações."
-              className="mt-7"
-            >
-              Iniciar conversa
-            </WhatsAppButton>
+            {content.brand.whatsapp ? (
+              <WhatsAppButton
+                message="Olá! Vim pelo site do Café Brasil Colonial e gostaria de mais informações."
+                className="mt-7"
+              >
+                Iniciar conversa
+              </WhatsAppButton>
+            ) : (
+              <p className="mt-7 rounded-2xl bg-white/10 p-4 text-sm font-bold text-brand-cream">
+                Cadastre o WhatsApp em Conteúdo da loja.
+              </p>
+            )}
+          </article>
+          <article className="rounded-4xl border border-brand-brown/10 bg-white p-7 shadow-card">
+            <Phone className="h-8 w-8 text-brand-green" />
+            <h2 className="mt-6 text-2xl font-extrabold text-brand-brown">
+              Telefone
+            </h2>
+            <p className="mt-3 leading-7 text-brand-ink/60">
+              Atendimento comercial para informações sobre pedidos e parcerias.
+            </p>
+            {content.brand.phone ? (
+              <Button
+                href={phoneHref}
+                external
+                variant="outline"
+                className="mt-7"
+              >
+                {content.brand.phone}
+              </Button>
+            ) : (
+              <p className="mt-7 rounded-2xl bg-brand-mist p-4 text-sm font-bold text-brand-brown">
+                Cadastre o telefone em Conteúdo da loja.
+              </p>
+            )}
           </article>
           <article className="rounded-4xl border border-brand-brown/10 bg-white p-7 shadow-card">
             <Instagram className="h-8 w-8 text-brand-green" />
@@ -86,6 +123,31 @@ export default async function ContactPage() {
             ) : (
               <p className="mt-7 rounded-2xl bg-brand-mist p-4 text-sm font-bold text-brand-brown">
                 Cadastre o e-mail em Conteúdo da loja.
+              </p>
+            )}
+          </article>
+          <article className="rounded-4xl border border-brand-brown/10 bg-white p-7 shadow-card">
+            <MapPin className="h-8 w-8 text-brand-green" />
+            <h2 className="mt-6 text-2xl font-extrabold text-brand-brown">
+              Endereço
+            </h2>
+            {address ? (
+              <>
+                <p className="mt-3 leading-7 text-brand-ink/60">{address}</p>
+                <Button
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    address,
+                  )}`}
+                  external
+                  variant="outline"
+                  className="mt-7"
+                >
+                  Abrir mapa
+                </Button>
+              </>
+            ) : (
+              <p className="mt-7 rounded-2xl bg-brand-mist p-4 text-sm font-bold text-brand-brown">
+                Cadastre o endereço em Conteúdo da loja.
               </p>
             )}
           </article>

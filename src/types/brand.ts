@@ -20,6 +20,9 @@ export type BrandConfig = {
     markLight: string;
   };
   whatsapp: string;
+  phone: string;
   instagram: string;
   email: string;
+  addressLine1: string;
+  addressLine2: string;
 };

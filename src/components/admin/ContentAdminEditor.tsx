@@ -263,6 +263,11 @@ export function ContentAdminEditor({
               help="Somente números, incluindo 55 e DDD."
             />
             <Field
+              label="Telefone fixo"
+              value={content.brand.phone}
+              onChange={(value) => updateBrand("phone", value)}
+            />
+            <Field
               label="E-mail"
               value={content.brand.email}
               type="email"
@@ -273,6 +278,16 @@ export function ContentAdminEditor({
               value={content.brand.instagram}
               onChange={(value) => updateBrand("instagram", value)}
               help="Cole o endereço completo do perfil."
+            />
+            <Field
+              label="Endereço"
+              value={content.brand.addressLine1}
+              onChange={(value) => updateBrand("addressLine1", value)}
+            />
+            <Field
+              label="Bairro, cidade e UF"
+              value={content.brand.addressLine2}
+              onChange={(value) => updateBrand("addressLine2", value)}
             />
             <Field
               label="CNPJ"

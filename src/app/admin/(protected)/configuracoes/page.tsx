@@ -4,15 +4,18 @@ import {
   CircleAlert,
   Database,
   ExternalLink,
+  FileText,
   KeyRound,
   Link2,
   LockKeyhole,
   MessageCircle,
 } from "lucide-react";
+import { getSiteContent } from "@/lib/orders-db";
 
 const configured = (value: string | undefined) => Boolean(value?.trim());
 
-export default function AdminSettingsPage() {
+export default async function AdminSettingsPage() {
+  const content = await getSiteContent();
   const checks = [
     {
       label: "Public Key do Mercado Pago",
@@ -42,6 +45,44 @@ export default function AdminSettingsPage() {
         configured(process.env.NEXT_PUBLIC_SITE_URL) &&
         process.env.NEXT_PUBLIC_SITE_URL !== "http://localhost:3000",
       detail: process.env.NEXT_PUBLIC_SITE_URL || "Não informado",
+    },
+  ];
+
+  const legalChecks = [
+    {
+      label: "CNPJ cadastrado",
+      ok: configured(content.brand.cnpj),
+      detail: content.brand.cnpj || "Preencha em Conteúdo da loja.",
+    },
+    {
+      label: "E-mail comercial",
+      ok: configured(content.brand.email),
+      detail: content.brand.email || "Preencha em Conteúdo da loja.",
+    },
+    {
+      label: "Telefone fixo",
+      ok: configured(content.brand.phone),
+      detail: content.brand.phone || "Preencha em Conteúdo da loja.",
+    },
+    {
+      label: "Endereço",
+      ok:
+        configured(content.brand.addressLine1) &&
+        configured(content.brand.addressLine2),
+      detail:
+        [content.brand.addressLine1, content.brand.addressLine2]
+          .filter(Boolean)
+          .join(", ") || "Preencha em Conteúdo da loja.",
+    },
+    {
+      label: "Termos de uso",
+      ok: true,
+      detail: "Página /termos publicada no site.",
+    },
+    {
+      label: "Trocas e devoluções",
+      ok: true,
+      detail: "Página /trocas-e-devolucoes publicada no site.",
     },
   ];
 
@@ -92,6 +133,50 @@ export default function AdminSettingsPage() {
                 }`}
               >
                 {check.ok ? "Configurado" : "Pendente"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-6 overflow-hidden rounded-3xl border border-brand-brown/10 bg-white shadow-card">
+        <div className="border-b border-brand-brown/10 p-6">
+          <div className="flex items-center gap-3">
+            <FileText className="h-6 w-6 text-brand-green" />
+            <h2 className="text-xl font-extrabold text-brand-brown">
+              Checklist legal e comercial
+            </h2>
+          </div>
+          <p className="mt-1 text-sm text-brand-ink/45">
+            Itens que ajudam a loja a operar com informações claras para o
+            cliente.
+          </p>
+        </div>
+        <div className="divide-y divide-brand-brown/8">
+          {legalChecks.map((check) => (
+            <div
+              key={check.label}
+              className="flex items-start gap-4 px-6 py-5"
+            >
+              {check.ok ? (
+                <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-brand-green" />
+              ) : (
+                <CircleAlert className="mt-0.5 h-6 w-6 shrink-0 text-amber-600" />
+              )}
+              <div>
+                <p className="font-extrabold text-brand-ink">{check.label}</p>
+                <p className="mt-1 text-sm leading-6 text-brand-ink/50">
+                  {check.detail}
+                </p>
+              </div>
+              <span
+                className={`ml-auto shrink-0 rounded-full px-3 py-1 text-xs font-extrabold ${
+                  check.ok
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-amber-100 text-amber-800"
+                }`}
+              >
+                {check.ok ? "Pronto" : "Pendente"}
               </span>
             </div>
           ))}
