@@ -195,6 +195,7 @@ export function CheckoutForm({
             orderId={session.orderId}
             amount={session.total}
             preferenceId={session.mercadoPagoPreferenceId}
+            fallbackCheckoutUrl={session.mercadoPagoCheckoutUrl}
             payer={{
               fullName: data.fullName,
               email: data.email,

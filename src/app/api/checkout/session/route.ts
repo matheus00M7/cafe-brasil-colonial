@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       throw new Error("Não foi possível preparar o pedido.");
     }
 
-    const mercadoPagoPreferenceId = await createMercadoPagoPreference(order);
+    const mercadoPagoPreference = await createMercadoPagoPreference(order);
 
     if (session) {
       await updateCustomerDetails(
@@ -99,7 +99,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       orderId: id,
       orderNumber,
-      mercadoPagoPreferenceId,
+      mercadoPagoPreferenceId: mercadoPagoPreference.id,
+      mercadoPagoCheckoutUrl: mercadoPagoPreference.checkoutUrl,
       ...totals,
     });
   } catch (error) {

@@ -29,6 +29,11 @@ type MercadoPagoPreference = {
   sandbox_init_point?: string;
 };
 
+export type MercadoPagoPreferenceResult = {
+  id: string;
+  checkoutUrl?: string;
+};
+
 type BrickFormData = {
   token?: string;
   issuer_id?: string | number;
@@ -105,9 +110,12 @@ export const mapPaymentStatus = (status: string): OrderStatus => {
   return statuses[status] || "pending";
 };
 
-export const createMercadoPagoPreference = async (order: StoredOrder) => {
+export const createMercadoPagoPreference = async (
+  order: StoredOrder,
+): Promise<MercadoPagoPreferenceResult> => {
   const { firstName, lastName } = splitName(order.customer.fullName);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const isTestEnvironment = getAccessToken().startsWith("TEST-");
   const notificationUrl = siteUrl.startsWith("https://")
     ? `${siteUrl}/api/webhooks/mercado-pago`
     : undefined;
@@ -182,7 +190,12 @@ export const createMercadoPagoPreference = async (order: StoredOrder) => {
     },
   );
 
-  return preference.id;
+  return {
+    id: preference.id,
+    checkoutUrl: isTestEnvironment
+      ? preference.sandbox_init_point || preference.init_point
+      : preference.init_point || preference.sandbox_init_point,
+  };
 };
 
 export const createMercadoPagoPayment = async (

@@ -2,7 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CreditCard, LockKeyhole, RefreshCw } from "lucide-react";
+import {
+  CreditCard,
+  ExternalLink,
+  FileText,
+  LockKeyhole,
+  QrCode,
+  RefreshCw,
+} from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import {
   loadMercadoPagoSdk,
@@ -58,11 +65,13 @@ export function PaymentBrick({
   orderId,
   amount,
   preferenceId,
+  fallbackCheckoutUrl,
   payer,
 }: {
   orderId: string;
   amount: number;
   preferenceId?: string;
+  fallbackCheckoutUrl?: string;
   payer?: PaymentPayer;
 }) {
   const router = useRouter();
@@ -76,10 +85,16 @@ export function PaymentBrick({
   const [brickVersion, setBrickVersion] = useState(0);
   const [error, setError] = useState("");
   const [loadingSeconds, setLoadingSeconds] = useState(0);
+  const [manualPaymentMethod, setManualPaymentMethod] = useState<
+    "pix" | "ticket" | null
+  >(null);
+  const [manualError, setManualError] = useState("");
   const publicKey = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY || "";
   const payerCpf = payer?.cpf || "";
   const payerEmail = payer?.email || "";
   const payerFullName = payer?.fullName || "";
+  const showQuickPayment =
+    !brickReady && (loadingSeconds >= 6 || Boolean(error));
 
   useEffect(() => {
     if (!publicKey || mercadoPagoConstructor) {
@@ -312,6 +327,71 @@ export function PaymentBrick({
     setBrickVersion((version) => version + 1);
   };
 
+  const submitManualPayment = async (method: "pix" | "ticket") => {
+    setManualPaymentMethod(method);
+    setManualError("");
+
+    try {
+      const paymentAttemptId = window.crypto.randomUUID();
+      const response = await fetch("/api/payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          paymentAttemptId,
+          formData:
+            method === "pix"
+              ? {
+                  payment_method_id: "pix",
+                  payment_type_id: "bank_transfer",
+                  transaction_amount: amount,
+                  payer: buildBrickPayer({
+                    fullName: payerFullName,
+                    email: payerEmail,
+                    cpf: payerCpf,
+                  }),
+                }
+              : {
+                  payment_method_id: "bolbradesco",
+                  payment_type_id: "ticket",
+                  transaction_amount: amount,
+                  payer: buildBrickPayer({
+                    fullName: payerFullName,
+                    email: payerEmail,
+                    cpf: payerCpf,
+                  }),
+                },
+        }),
+      });
+      const payload = (await response.json()) as PaymentResult & {
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(
+          payload.error || "Não foi possível criar este pagamento.",
+        );
+      }
+
+      if (payload.status !== "rejected") {
+        const cleanCpf = onlyDigits(payerCpf);
+        if (cleanCpf.length === 11) {
+          window.sessionStorage.setItem(`cbc_order_access_${orderId}`, cleanCpf);
+        }
+        clearCart();
+      }
+      router.push(payload.redirectUrl);
+    } catch (paymentError) {
+      setManualError(
+        paymentError instanceof Error
+          ? paymentError.message
+          : "Não foi possível criar este pagamento.",
+      );
+    } finally {
+      setManualPaymentMethod(null);
+    }
+  };
+
   if (!publicKey) {
     return (
       <div className="rounded-3xl border border-amber-300 bg-amber-50 p-6 text-amber-950">
@@ -344,8 +424,8 @@ export function PaymentBrick({
           </div>
         </div>
 
-        {!brickReady && !error && (
-          <div className="mb-4 rounded-2xl bg-brand-mist p-5 text-sm text-brand-brown/70">
+      {!brickReady && !error && (
+        <div className="mb-4 rounded-2xl bg-brand-mist p-5 text-sm text-brand-brown/70">
             <div className="flex items-center justify-between gap-4">
               <span className="font-extrabold">
                 {loadingSeconds < 8
@@ -358,11 +438,57 @@ export function PaymentBrick({
             </div>
             <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/70">
               <div className="h-full w-1/2 animate-[payment-loading_1.15s_ease-in-out_infinite] rounded-full bg-brand-green/70" />
-            </div>
           </div>
-        )}
-        {error && (
-          <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+        </div>
+      )}
+      {showQuickPayment && (
+        <div className="mb-5 rounded-2xl border border-brand-brown/10 bg-brand-cream/35 p-4">
+          <p className="text-sm font-extrabold text-brand-brown">
+            Pagamento direto
+          </p>
+          <p className="mt-1 text-sm leading-6 text-brand-ink/60">
+            Se o painel completo demorar, finalize por uma opÃ§Ã£o segura abaixo.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => void submitManualPayment("pix")}
+              disabled={Boolean(manualPaymentMethod)}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-green px-4 py-3 text-sm font-extrabold text-white transition hover:bg-brand-green/90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <QrCode className="h-4 w-4" />
+              {manualPaymentMethod === "pix" ? "Gerando Pix..." : "Pix"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void submitManualPayment("ticket")}
+              disabled={Boolean(manualPaymentMethod)}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-brand-brown/15 bg-white px-4 py-3 text-sm font-extrabold text-brand-brown transition hover:bg-brand-mist disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <FileText className="h-4 w-4" />
+              {manualPaymentMethod === "ticket" ? "Gerando boleto..." : "Boleto"}
+            </button>
+            {fallbackCheckoutUrl && (
+              <a
+                href={fallbackCheckoutUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-brand-brown/15 bg-white px-4 py-3 text-sm font-extrabold text-brand-brown transition hover:bg-brand-mist"
+              >
+                <ExternalLink className="h-4 w-4" />
+                CartÃ£o
+              </a>
+            )}
+          </div>
+          {manualError && (
+            <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">
+              {manualError}
+            </p>
+          )}
+        </div>
+      )}
+      {error && (
+        <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
             <p>{error}</p>
             <button
               type="button"
