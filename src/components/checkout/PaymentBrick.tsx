@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { CreditCard, LockKeyhole, RefreshCw } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import {
+  loadMercadoPagoSdk,
+  type MercadoPagoConstructor,
+  type MercadoPagoPaymentBrickController,
+} from "@/lib/mercado-pago-browser";
 import type { PaymentResult } from "@/types/checkout";
 
 type PaymentPayer = {
@@ -12,29 +16,6 @@ type PaymentPayer = {
   email: string;
   cpf: string;
 };
-
-type BrickController = {
-  unmount: () => void;
-};
-
-type MercadoPagoInstance = {
-  bricks: () => {
-    create: (
-      type: "payment" | "cardPayment",
-      containerId: string,
-      settings: Record<string, unknown>,
-    ) => Promise<BrickController>;
-  };
-};
-
-declare global {
-  interface Window {
-    MercadoPago?: new (
-      publicKey: string,
-      options: { locale: string },
-    ) => MercadoPagoInstance;
-  }
-}
 
 const onlyDigits = (value = "") => value.replace(/\D/g, "");
 
@@ -84,10 +65,11 @@ export function PaymentBrick({
 }) {
   const router = useRouter();
   const { clearCart } = useCart();
-  const controllerRef = useRef<BrickController | null>(null);
+  const controllerRef = useRef<MercadoPagoPaymentBrickController | null>(null);
   const mountedRef = useRef(false);
   const brickReadyRef = useRef(false);
-  const [scriptReady, setScriptReady] = useState(false);
+  const [mercadoPagoConstructor, setMercadoPagoConstructor] =
+    useState<MercadoPagoConstructor | null>(null);
   const [brickReady, setBrickReady] = useState(false);
   const [brickVersion, setBrickVersion] = useState(0);
   const [error, setError] = useState("");
@@ -98,23 +80,42 @@ export function PaymentBrick({
   const payerFullName = payer?.fullName || "";
 
   useEffect(() => {
-    if (!scriptReady && window.MercadoPago) {
-      setScriptReady(true);
+    if (!publicKey || mercadoPagoConstructor) {
+      return;
     }
-  }, [brickVersion, scriptReady]);
+
+    let cancelled = false;
+
+    loadMercadoPagoSdk()
+      .then((MercadoPago) => {
+        if (!cancelled) {
+          setMercadoPagoConstructor(() => MercadoPago);
+        }
+      })
+      .catch((sdkError) => {
+        console.warn(
+          "Não foi possível carregar o SDK do Mercado Pago.",
+          sdkError,
+        );
+        if (!cancelled) {
+          setError(PAYMENT_BRICK_LOAD_ERROR);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [brickVersion, mercadoPagoConstructor, publicKey]);
 
   useEffect(() => {
-    if (
-      !scriptReady ||
-      !publicKey ||
-      !window.MercadoPago ||
-      mountedRef.current
-    ) {
+    if (!mercadoPagoConstructor || !publicKey || mountedRef.current) {
       return;
     }
 
     mountedRef.current = true;
-    const mercadoPago = new window.MercadoPago(publicKey, { locale: "pt-BR" });
+    const mercadoPago = new mercadoPagoConstructor(publicKey, {
+      locale: "pt-BR",
+    });
     const brickPayer = buildBrickPayer({
       fullName: payerFullName,
       email: payerEmail,
@@ -247,11 +248,11 @@ export function PaymentBrick({
     payerFullName,
     publicKey,
     router,
-    scriptReady,
+    mercadoPagoConstructor,
   ]);
 
   useEffect(() => {
-    if (!publicKey || scriptReady || error) {
+    if (!publicKey || mercadoPagoConstructor || error) {
       return;
     }
 
@@ -262,10 +263,10 @@ export function PaymentBrick({
     }, PAYMENT_BRICK_TIMEOUT_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [brickVersion, error, publicKey, scriptReady]);
+  }, [brickVersion, error, mercadoPagoConstructor, publicKey]);
 
   useEffect(() => {
-    if (!scriptReady || !publicKey || brickReady || error) {
+    if (!mercadoPagoConstructor || !publicKey || brickReady || error) {
       return;
     }
 
@@ -276,7 +277,7 @@ export function PaymentBrick({
     }, PAYMENT_BRICK_TIMEOUT_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [brickReady, brickVersion, error, publicKey, scriptReady]);
+  }, [brickReady, brickVersion, error, mercadoPagoConstructor, publicKey]);
 
   useEffect(() => {
     if (brickReady || error) {
@@ -300,6 +301,7 @@ export function PaymentBrick({
     controllerRef.current = null;
     mountedRef.current = false;
     brickReadyRef.current = false;
+    setMercadoPagoConstructor(null);
     setError("");
     setBrickReady(false);
     setLoadingSeconds(0);
@@ -322,15 +324,7 @@ export function PaymentBrick({
   }
 
   return (
-    <>
-      <Script
-        src="https://sdk.mercadopago.com/js/v2"
-        strategy="afterInteractive"
-        onLoad={() => setScriptReady(true)}
-        onReady={() => setScriptReady(true)}
-        onError={() => setError(PAYMENT_BRICK_LOAD_ERROR)}
-      />
-      <div className="rounded-4xl border border-brand-brown/10 bg-white p-5 shadow-card sm:p-8">
+    <div className="rounded-4xl border border-brand-brown/10 bg-white p-5 shadow-card sm:p-8">
         <div className="mb-6 flex items-start gap-3">
           <div className="rounded-2xl bg-brand-cream p-3 text-brand-brown">
             <CreditCard className="h-6 w-6" />
@@ -381,7 +375,6 @@ export function PaymentBrick({
           <LockKeyhole className="h-4 w-4 text-brand-green" />
           Ambiente protegido. A loja não armazena os dados do cartão.
         </div>
-      </div>
-    </>
+    </div>
   );
 }

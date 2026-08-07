@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import Script from "next/script";
+import { useEffect, useState, type FormEvent } from "react";
 import { ArrowLeft, LockKeyhole, ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { preloadMercadoPagoSdk } from "@/lib/mercado-pago-browser";
 import type {
   CheckoutData,
   CheckoutSessionResponse,
@@ -62,6 +62,14 @@ export function CheckoutForm({
   >({});
   const mercadoPagoPublicKey =
     process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY || "";
+
+  useEffect(() => {
+    if (!mercadoPagoPublicKey || !items.length || session) {
+      return;
+    }
+
+    preloadMercadoPagoSdk();
+  }, [items.length, mercadoPagoPublicKey, session]);
 
   const setField = <K extends keyof CheckoutData>(
     field: K,
@@ -204,14 +212,7 @@ export function CheckoutForm({
   }
 
   return (
-    <>
-      {mercadoPagoPublicKey && (
-        <Script
-          src="https://sdk.mercadopago.com/js/v2"
-          strategy="afterInteractive"
-        />
-      )}
-      <form
+    <form
         onSubmit={handleSubmit}
         noValidate
         className="grid items-start gap-8 lg:grid-cols-[1fr_390px]"
@@ -385,6 +386,5 @@ export function CheckoutForm({
       </div>
         <OrderSummary items={items} subtotal={subtotal} />
       </form>
-    </>
   );
 }
