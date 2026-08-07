@@ -11,6 +11,7 @@ import { getCustomerSession } from "@/lib/customer-auth";
 import { updateCustomerDetails } from "@/lib/customer-db";
 import { assertSameOrigin } from "@/lib/request-security";
 import { createAppLog } from "@/lib/app-logs";
+import { createMercadoPagoPreference } from "@/lib/mercado-pago";
 
 export const runtime = "nodejs";
 
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     const id = randomUUID();
     const orderNumber = createOrderNumber();
 
-    await createOrder({
+    const order = await createOrder({
       id,
       customerAccountId: session?.account.id || null,
       orderNumber,
@@ -69,6 +70,11 @@ export async function POST(request: NextRequest) {
       items,
       ...totals,
     });
+    if (!order) {
+      throw new Error("Não foi possível preparar o pedido.");
+    }
+
+    const mercadoPagoPreferenceId = await createMercadoPagoPreference(order);
 
     if (session) {
       await updateCustomerDetails(
@@ -93,6 +99,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       orderId: id,
       orderNumber,
+      mercadoPagoPreferenceId,
       ...totals,
     });
   } catch (error) {

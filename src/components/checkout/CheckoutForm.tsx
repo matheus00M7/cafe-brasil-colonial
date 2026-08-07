@@ -194,6 +194,7 @@ export function CheckoutForm({
           <PaymentBrick
             orderId={session.orderId}
             amount={session.total}
+            preferenceId={session.mercadoPagoPreferenceId}
             payer={{
               fullName: data.fullName,
               email: data.email,

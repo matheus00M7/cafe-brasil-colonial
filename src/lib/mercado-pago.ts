@@ -23,6 +23,12 @@ type MercadoPagoPayment = {
   };
 };
 
+type MercadoPagoPreference = {
+  id: string;
+  init_point?: string;
+  sandbox_init_point?: string;
+};
+
 type BrickFormData = {
   token?: string;
   issuer_id?: string | number;
@@ -84,6 +90,8 @@ const splitName = (fullName: string) => {
   };
 };
 
+const onlyDigits = (value = "") => value.replace(/\D/g, "");
+
 export const mapPaymentStatus = (status: string): OrderStatus => {
   const statuses: Record<string, OrderStatus> = {
     approved: "approved",
@@ -95,6 +103,86 @@ export const mapPaymentStatus = (status: string): OrderStatus => {
     charged_back: "charged_back",
   };
   return statuses[status] || "pending";
+};
+
+export const createMercadoPagoPreference = async (order: StoredOrder) => {
+  const { firstName, lastName } = splitName(order.customer.fullName);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const notificationUrl = siteUrl.startsWith("https://")
+    ? `${siteUrl}/api/webhooks/mercado-pago`
+    : undefined;
+  const cleanCpf = onlyDigits(order.customer.cpf);
+  const cleanWhatsapp = onlyDigits(order.customer.whatsapp);
+  const cleanCep = onlyDigits(order.address.cep);
+  const backUrls = siteUrl.startsWith("https://")
+    ? {
+        success: `${siteUrl}/pedido/${order.id}`,
+        failure: `${siteUrl}/pedido/${order.id}`,
+        pending: `${siteUrl}/pedido/${order.id}`,
+      }
+    : undefined;
+
+  const items = [
+    ...order.items.map((item) => ({
+      id: item.productId,
+      title: item.name,
+      description: item.optionSummary
+        ? `${item.name} - ${item.optionSummary}`
+        : item.name,
+      quantity: item.quantity,
+      unit_price: Number(item.unitPrice.toFixed(2)),
+      currency_id: "BRL",
+      category_id: "food",
+    })),
+    ...(order.shipping > 0
+      ? [
+          {
+            id: "shipping",
+            title: "Frete",
+            quantity: 1,
+            unit_price: Number(order.shipping.toFixed(2)),
+            currency_id: "BRL",
+            category_id: "shipping",
+          },
+        ]
+      : []),
+  ];
+
+  const preference = await apiRequest<MercadoPagoPreference>(
+    "/checkout/preferences",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        items,
+        payer: {
+          name: firstName,
+          surname: lastName,
+          email: order.customer.email,
+          phone: cleanWhatsapp ? { number: cleanWhatsapp } : undefined,
+          identification:
+            cleanCpf.length === 11
+              ? { type: "CPF", number: cleanCpf }
+              : undefined,
+          address: cleanCep
+            ? {
+                zip_code: cleanCep,
+                street_name: order.address.street,
+                street_number: order.address.number,
+              }
+            : undefined,
+        },
+        external_reference: order.id,
+        notification_url: notificationUrl,
+        metadata: {
+          order_id: order.id,
+          order_number: order.orderNumber,
+        },
+        ...(backUrls ? { auto_return: "approved", back_urls: backUrls } : {}),
+      }),
+    },
+  );
+
+  return preference.id;
 };
 
 export const createMercadoPagoPayment = async (

@@ -57,10 +57,12 @@ const PAYMENT_BRICK_TIMEOUT_MS = 20000;
 export function PaymentBrick({
   orderId,
   amount,
+  preferenceId,
   payer,
 }: {
   orderId: string;
   amount: number;
+  preferenceId?: string;
   payer?: PaymentPayer;
 }) {
   const router = useRouter();
@@ -130,6 +132,7 @@ export function PaymentBrick({
           {
             initialization: {
               amount,
+              ...(preferenceId ? { preferenceId } : {}),
               ...(brickPayer ? { payer: brickPayer } : {}),
             },
             customization: {
@@ -246,6 +249,7 @@ export function PaymentBrick({
     payerCpf,
     payerEmail,
     payerFullName,
+    preferenceId,
     publicKey,
     router,
     mercadoPagoConstructor,

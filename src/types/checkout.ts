@@ -27,6 +27,7 @@ export type CheckoutCartItem = {
 export type CheckoutSessionResponse = {
   orderId: string;
   orderNumber: string;
+  mercadoPagoPreferenceId?: string;
   subtotal: number;
   shipping: number;
   total: number;
