@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { ArrowLeft, LockKeyhole, ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { preloadMercadoPagoSdk } from "@/lib/mercado-pago-browser";
 import type {
   CheckoutData,
   CheckoutSessionResponse,
@@ -60,17 +59,6 @@ export function CheckoutForm({
   const [errors, setErrors] = useState<
     Partial<Record<keyof CheckoutData, string>>
   >({});
-  const mercadoPagoPublicKey =
-    process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY || "";
-
-  useEffect(() => {
-    if (!mercadoPagoPublicKey || !items.length || session) {
-      return;
-    }
-
-    preloadMercadoPagoSdk();
-  }, [items.length, mercadoPagoPublicKey, session]);
-
   const setField = <K extends keyof CheckoutData>(
     field: K,
     value: CheckoutData[K],

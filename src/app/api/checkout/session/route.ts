@@ -74,7 +74,29 @@ export async function POST(request: NextRequest) {
       throw new Error("Não foi possível preparar o pedido.");
     }
 
-    const mercadoPagoPreference = await createMercadoPagoPreference(order);
+    let mercadoPagoPreference:
+      | Awaited<ReturnType<typeof createMercadoPagoPreference>>
+      | null = null;
+
+    try {
+      mercadoPagoPreference = await createMercadoPagoPreference(order);
+    } catch (preferenceError) {
+      await createAppLog({
+        level: "warn",
+        area: "pagamentos",
+        event: "mercado_pago_preference_failed",
+        message: "Falha ao criar link de checkout do Mercado Pago.",
+        requestPath: request.nextUrl.pathname,
+        entityType: "order",
+        entityId: order.id,
+        details: {
+          message:
+            preferenceError instanceof Error
+              ? preferenceError.message
+              : "Erro desconhecido.",
+        },
+      });
+    }
 
     if (session) {
       await updateCustomerDetails(
@@ -99,8 +121,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       orderId: id,
       orderNumber,
-      mercadoPagoPreferenceId: mercadoPagoPreference.id,
-      mercadoPagoCheckoutUrl: mercadoPagoPreference.checkoutUrl,
+      mercadoPagoPreferenceId: mercadoPagoPreference?.id,
+      mercadoPagoCheckoutUrl: mercadoPagoPreference?.checkoutUrl,
       ...totals,
     });
   } catch (error) {
