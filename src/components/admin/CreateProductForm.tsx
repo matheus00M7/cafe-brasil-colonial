@@ -158,7 +158,7 @@ export function CreateProductForm() {
   );
   const [contents, setContents] = useState("");
   const [badge, setBadge] = useState("");
-  const [price, setPrice] = useState("1.00");
+  const [price, setPrice] = useState("");
   const [stock, setStock] = useState("");
   const [active, setActive] = useState(true);
   const [featured, setFeatured] = useState(false);
@@ -192,7 +192,7 @@ export function CreateProductForm() {
     setSensoryNotes("Encorpado, Aroma clássico");
     setContents("");
     setBadge("");
-    setPrice("1.00");
+    setPrice("");
     setStock("");
     setActive(true);
     setFeatured(false);
@@ -355,6 +355,7 @@ export function CreateProductForm() {
                   onChange={(event) => setPrice(event.target.value)}
                   inputMode="decimal"
                   className={inputClass}
+                  placeholder="Ex.: 39,90"
                 />
               </label>
               <label className="text-sm font-bold text-brand-ink">

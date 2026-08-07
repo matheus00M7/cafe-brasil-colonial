@@ -69,6 +69,9 @@ const buildBrickPayer = (payer?: PaymentPayer) => {
   };
 };
 
+const PAYMENT_BRICK_LOAD_ERROR =
+  "Não foi possível iniciar o pagamento. Recarregue as formas de pagamento ou tente novamente em instantes.";
+
 export function PaymentBrick({
   orderId,
   amount,
@@ -146,6 +149,7 @@ export function PaymentBrick({
               paymentMethods: {
                 creditCard: "all",
                 debitCard: "all",
+                prepaidCard: "all",
                 bankTransfer: "all",
                 ticket: "all",
                 maxInstallments: 12,
@@ -196,25 +200,25 @@ export function PaymentBrick({
                 }
                 router.push(payload.redirectUrl);
               },
-              onError: () => {
+              onError: (brickError: unknown) => {
                 // O Brick também usa este callback para avisos recuperáveis de
                 // validação. Não use console.error aqui: o Next transforma isso
                 // em uma tela de erro durante o desenvolvimento.
-                console.warn("Aviso do formulário do Mercado Pago.");
+                console.warn("Aviso do formulário do Mercado Pago.", brickError);
                 if (!brickReadyRef.current) {
-                  setError(
-                    "O Mercado Pago demorou para carregar. Recarregue as formas de pagamento.",
-                  );
+                  setError(PAYMENT_BRICK_LOAD_ERROR);
                 }
               },
             },
           },
         );
-      } catch {
-        console.warn("Não foi possível montar o Payment Brick.");
-        setError(
-          "Não foi possível iniciar o pagamento. Recarregue as formas de pagamento.",
-        );
+      } catch (brickError) {
+        console.warn("Não foi possível montar o Payment Brick.", brickError);
+        controllerRef.current = null;
+        mountedRef.current = false;
+        brickReadyRef.current = false;
+        setBrickReady(false);
+        setError(PAYMENT_BRICK_LOAD_ERROR);
       }
     };
 
@@ -238,10 +242,45 @@ export function PaymentBrick({
     scriptReady,
   ]);
 
+  useEffect(() => {
+    if (!publicKey || scriptReady || error) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (!window.MercadoPago) {
+        setError(PAYMENT_BRICK_LOAD_ERROR);
+      }
+    }, 12000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [brickVersion, error, publicKey, scriptReady]);
+
+  useEffect(() => {
+    if (!scriptReady || !publicKey || brickReady || error) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (!brickReadyRef.current) {
+        setError(PAYMENT_BRICK_LOAD_ERROR);
+      }
+    }, 12000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [brickReady, brickVersion, error, publicKey, scriptReady]);
+
   const reloadBrick = () => {
+    try {
+      controllerRef.current?.unmount();
+    } catch (unmountError) {
+      console.warn("Não foi possível desmontar o Payment Brick.", unmountError);
+    }
+    controllerRef.current = null;
+    mountedRef.current = false;
+    brickReadyRef.current = false;
     setError("");
     setBrickReady(false);
-    brickReadyRef.current = false;
     setBrickVersion((version) => version + 1);
   };
 
@@ -266,6 +305,7 @@ export function PaymentBrick({
         src="https://sdk.mercadopago.com/js/v2"
         strategy="afterInteractive"
         onLoad={() => setScriptReady(true)}
+        onError={() => setError(PAYMENT_BRICK_LOAD_ERROR)}
       />
       <div className="rounded-4xl border border-brand-brown/10 bg-white p-5 shadow-card sm:p-8">
         <div className="mb-6 flex items-start gap-3">

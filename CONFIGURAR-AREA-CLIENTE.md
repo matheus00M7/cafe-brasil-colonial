@@ -56,7 +56,7 @@ O projeto usa a API do Resend quando configurada:
 
 ```env
 RESEND_API_KEY=re_...
-CUSTOMER_EMAIL_FROM=Café Brasil Colonial <contato@seudominio.com>
+CUSTOMER_EMAIL_FROM=Café Brasil Colonial <vendas@cafebrasilcolonial.com.br>
 ```
 
 O domínio do remetente precisa ser validado no Resend. Localmente, quando a

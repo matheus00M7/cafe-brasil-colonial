@@ -8,9 +8,6 @@ create table if not exists public.customer_accounts (
   updated_at timestamptz not null default now()
 );
 
-create unique index if not exists customer_accounts_email_idx
-  on public.customer_accounts (email);
-
 create table if not exists public.customer_sessions (
   token_hash text primary key,
   account_id uuid not null references public.customer_accounts(id) on delete cascade,
@@ -173,5 +170,100 @@ create index if not exists app_logs_entity_idx
 
 alter table public.app_logs enable row level security;
 
--- Nenhuma política pública é criada. O projeto acessa esta tabela somente no
--- servidor com a SUPABASE_SERVICE_ROLE_KEY, que nunca deve ir para o navegador.
+grant usage on schema public to service_role;
+
+revoke all on table
+  public.customer_accounts,
+  public.customer_sessions,
+  public.customer_password_resets,
+  public.orders,
+  public.product_settings,
+  public.content_settings,
+  public.subscriptions,
+  public.app_logs
+from anon, authenticated;
+
+grant select, insert, update, delete on table
+  public.customer_accounts,
+  public.customer_sessions,
+  public.customer_password_resets,
+  public.orders,
+  public.product_settings,
+  public.content_settings,
+  public.subscriptions,
+  public.app_logs
+to service_role;
+
+alter default privileges for role postgres in schema public
+  revoke select, insert, update, delete on tables from anon, authenticated;
+
+alter default privileges for role postgres in schema public
+  grant select, insert, update, delete on tables to service_role;
+
+drop policy if exists "server only: deny direct client access"
+  on public.customer_accounts;
+drop policy if exists "server only: deny direct client access"
+  on public.customer_sessions;
+drop policy if exists "server only: deny direct client access"
+  on public.customer_password_resets;
+drop policy if exists "server only: deny direct client access"
+  on public.orders;
+drop policy if exists "server only: deny direct client access"
+  on public.product_settings;
+drop policy if exists "server only: deny direct client access"
+  on public.content_settings;
+drop policy if exists "server only: deny direct client access"
+  on public.subscriptions;
+drop policy if exists "server only: deny direct client access"
+  on public.app_logs;
+
+create policy "server only: deny direct client access"
+  on public.customer_accounts
+  for all to anon, authenticated
+  using (false)
+  with check (false);
+
+create policy "server only: deny direct client access"
+  on public.customer_sessions
+  for all to anon, authenticated
+  using (false)
+  with check (false);
+
+create policy "server only: deny direct client access"
+  on public.customer_password_resets
+  for all to anon, authenticated
+  using (false)
+  with check (false);
+
+create policy "server only: deny direct client access"
+  on public.orders
+  for all to anon, authenticated
+  using (false)
+  with check (false);
+
+create policy "server only: deny direct client access"
+  on public.product_settings
+  for all to anon, authenticated
+  using (false)
+  with check (false);
+
+create policy "server only: deny direct client access"
+  on public.content_settings
+  for all to anon, authenticated
+  using (false)
+  with check (false);
+
+create policy "server only: deny direct client access"
+  on public.subscriptions
+  for all to anon, authenticated
+  using (false)
+  with check (false);
+
+create policy "server only: deny direct client access"
+  on public.app_logs
+  for all to anon, authenticated
+  using (false)
+  with check (false);
+
+-- The project accesses these tables only from the server with
+-- SUPABASE_SERVICE_ROLE_KEY. Never expose that key in the browser.

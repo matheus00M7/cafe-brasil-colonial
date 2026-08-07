@@ -14,7 +14,7 @@ export const sendPasswordResetEmail = async (input: {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from =
     process.env.CUSTOMER_EMAIL_FROM?.trim() ||
-    "Café Brasil Colonial <contato@seudominio.com>";
+    "Café Brasil Colonial <vendas@cafebrasilcolonial.com.br>";
   if (!apiKey) {
     if (process.env.NODE_ENV === "production") {
       throw new Error("O serviço de recuperação por e-mail não foi configurado.");

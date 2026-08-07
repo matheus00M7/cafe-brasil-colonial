@@ -183,7 +183,7 @@ necessário editar o código para essas tarefas.
 NEXT_PUBLIC_WHATSAPP_NUMBER=5533988332140
 NEXT_PUBLIC_SITE_NAME=Café Brasil Colonial
 NEXT_PUBLIC_INSTAGRAM_URL=
-NEXT_PUBLIC_CONTACT_EMAIL=
+NEXT_PUBLIC_CONTACT_EMAIL=vendas@cafebrasilcolonial.com.br
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
 NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY=
@@ -199,7 +199,7 @@ SUPABASE_SERVICE_ROLE_KEY=
 
 CUSTOMER_DATA_ENCRYPTION_KEY=
 RESEND_API_KEY=
-CUSTOMER_EMAIL_FROM="Café Brasil Colonial <contato@seudominio.com>"
+CUSTOMER_EMAIL_FROM="Café Brasil Colonial <vendas@cafebrasilcolonial.com.br>"
 ```
 
 ## Antes de publicar
