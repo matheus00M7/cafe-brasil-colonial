@@ -57,6 +57,15 @@ textarea {
     animation: reveal 0.65s ease both;
   }
 
+  @keyframes payment-loading {
+    0% {
+      transform: translateX(-105%);
+    }
+    100% {
+      transform: translateX(205%);
+    }
+  }
+
   @keyframes reveal {
     from {
       opacity: 0;

@@ -50,6 +50,12 @@ export default async function RootLayout({
   const customerSession = await getCustomerSession();
   return (
     <html lang="pt-BR">
+      <head>
+        <link rel="dns-prefetch" href="https://sdk.mercadopago.com" />
+        <link rel="dns-prefetch" href="https://http2.mlstatic.com" />
+        <link rel="preconnect" href="https://sdk.mercadopago.com" />
+        <link rel="preconnect" href="https://http2.mlstatic.com" />
+      </head>
       <body>
         <SiteContentProvider content={content}>
           <CartProvider>

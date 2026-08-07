@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Script from "next/script";
 import { ArrowLeft, LockKeyhole, ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import type {
@@ -59,6 +60,8 @@ export function CheckoutForm({
   const [errors, setErrors] = useState<
     Partial<Record<keyof CheckoutData, string>>
   >({});
+  const mercadoPagoPublicKey =
+    process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY || "";
 
   const setField = <K extends keyof CheckoutData>(
     field: K,
@@ -201,74 +204,81 @@ export function CheckoutForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      noValidate
-      className="grid items-start gap-8 lg:grid-cols-[1fr_390px]"
-    >
-      <div className="space-y-7">
-        <section className="rounded-4xl border border-brand-brown/10 bg-white p-6 shadow-card sm:p-8">
-          <h2 className="text-2xl font-extrabold text-brand-brown">
-            Dados do cliente
-          </h2>
-          {signedIn ? (
-            <p className="mt-2 text-sm font-bold text-brand-green">
-              Seus dados salvos foram preenchidos automaticamente.
-            </p>
-          ) : (
-            <p className="mt-2 text-sm text-brand-ink/55">
-              Você pode comprar sem login. Depois, acompanhe pelo CPF em{" "}
-              <Link
-                href="/rastrear"
-                className="font-extrabold text-brand-green hover:underline"
-              >
-                Rastrear pedido
-              </Link>
-              . Se preferir,{" "}
-              <Link
-                href="/entrar"
-                className="font-extrabold text-brand-green hover:underline"
-              >
-                entre na sua conta
-              </Link>{" "}
-              para salvar os dados e ver tudo pelo painel.
-            </p>
-          )}
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
-            <Input
-              label="Nome completo *"
-              value={data.fullName}
-              onChange={(event) => setField("fullName", event.target.value)}
-              error={errors.fullName}
-              placeholder="Seu nome"
-            />
-            <Input
-              label="WhatsApp *"
-              value={data.whatsapp}
-              onChange={(event) => setField("whatsapp", event.target.value)}
-              error={errors.whatsapp}
-              placeholder="(00) 00000-0000"
-              inputMode="tel"
-            />
-            <Input
-              label="E-mail *"
-              value={data.email}
-              onChange={(event) => setField("email", event.target.value)}
-              error={errors.email}
-              placeholder="voce@email.com"
-              type="email"
-              readOnly={signedIn}
-            />
-            <Input
-              label="CPF *"
-              value={data.cpf}
-              onChange={(event) => setField("cpf", event.target.value)}
-              error={errors.cpf}
-              placeholder="000.000.000-00"
-              inputMode="numeric"
-            />
-          </div>
-        </section>
+    <>
+      {mercadoPagoPublicKey && (
+        <Script
+          src="https://sdk.mercadopago.com/js/v2"
+          strategy="afterInteractive"
+        />
+      )}
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        className="grid items-start gap-8 lg:grid-cols-[1fr_390px]"
+      >
+        <div className="space-y-7">
+          <section className="rounded-4xl border border-brand-brown/10 bg-white p-6 shadow-card sm:p-8">
+            <h2 className="text-2xl font-extrabold text-brand-brown">
+              Dados do cliente
+            </h2>
+            {signedIn ? (
+              <p className="mt-2 text-sm font-bold text-brand-green">
+                Seus dados salvos foram preenchidos automaticamente.
+              </p>
+            ) : (
+              <p className="mt-2 text-sm text-brand-ink/55">
+                Você pode comprar sem login. Depois, acompanhe pelo CPF em{" "}
+                <Link
+                  href="/rastrear"
+                  className="font-extrabold text-brand-green hover:underline"
+                >
+                  Rastrear pedido
+                </Link>
+                . Se preferir,{" "}
+                <Link
+                  href="/entrar"
+                  className="font-extrabold text-brand-green hover:underline"
+                >
+                  entre na sua conta
+                </Link>{" "}
+                para salvar os dados e ver tudo pelo painel.
+              </p>
+            )}
+            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+              <Input
+                label="Nome completo *"
+                value={data.fullName}
+                onChange={(event) => setField("fullName", event.target.value)}
+                error={errors.fullName}
+                placeholder="Seu nome"
+              />
+              <Input
+                label="WhatsApp *"
+                value={data.whatsapp}
+                onChange={(event) => setField("whatsapp", event.target.value)}
+                error={errors.whatsapp}
+                placeholder="(00) 00000-0000"
+                inputMode="tel"
+              />
+              <Input
+                label="E-mail *"
+                value={data.email}
+                onChange={(event) => setField("email", event.target.value)}
+                error={errors.email}
+                placeholder="voce@email.com"
+                type="email"
+                readOnly={signedIn}
+              />
+              <Input
+                label="CPF *"
+                value={data.cpf}
+                onChange={(event) => setField("cpf", event.target.value)}
+                error={errors.cpf}
+                placeholder="000.000.000-00"
+                inputMode="numeric"
+              />
+            </div>
+          </section>
 
         <section className="rounded-4xl border border-brand-brown/10 bg-white p-6 shadow-card sm:p-8">
           <h2 className="text-2xl font-extrabold text-brand-brown">
@@ -373,7 +383,8 @@ export function CheckoutForm({
           de pagamento. Dados de cartão não são armazenados pela loja.
         </p>
       </div>
-      <OrderSummary items={items} subtotal={subtotal} />
-    </form>
+        <OrderSummary items={items} subtotal={subtotal} />
+      </form>
+    </>
   );
 }

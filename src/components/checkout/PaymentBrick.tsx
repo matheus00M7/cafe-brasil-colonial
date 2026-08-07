@@ -71,6 +71,7 @@ const buildBrickPayer = (payer?: PaymentPayer) => {
 
 const PAYMENT_BRICK_LOAD_ERROR =
   "Não foi possível iniciar o pagamento. Recarregue as formas de pagamento ou tente novamente em instantes.";
+const PAYMENT_BRICK_TIMEOUT_MS = 20000;
 
 export function PaymentBrick({
   orderId,
@@ -90,10 +91,17 @@ export function PaymentBrick({
   const [brickReady, setBrickReady] = useState(false);
   const [brickVersion, setBrickVersion] = useState(0);
   const [error, setError] = useState("");
+  const [loadingSeconds, setLoadingSeconds] = useState(0);
   const publicKey = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY || "";
   const payerCpf = payer?.cpf || "";
   const payerEmail = payer?.email || "";
   const payerFullName = payer?.fullName || "";
+
+  useEffect(() => {
+    if (!scriptReady && window.MercadoPago) {
+      setScriptReady(true);
+    }
+  }, [brickVersion, scriptReady]);
 
   useEffect(() => {
     if (
@@ -251,7 +259,7 @@ export function PaymentBrick({
       if (!window.MercadoPago) {
         setError(PAYMENT_BRICK_LOAD_ERROR);
       }
-    }, 12000);
+    }, PAYMENT_BRICK_TIMEOUT_MS);
 
     return () => window.clearTimeout(timeoutId);
   }, [brickVersion, error, publicKey, scriptReady]);
@@ -265,10 +273,23 @@ export function PaymentBrick({
       if (!brickReadyRef.current) {
         setError(PAYMENT_BRICK_LOAD_ERROR);
       }
-    }, 12000);
+    }, PAYMENT_BRICK_TIMEOUT_MS);
 
     return () => window.clearTimeout(timeoutId);
   }, [brickReady, brickVersion, error, publicKey, scriptReady]);
+
+  useEffect(() => {
+    if (brickReady || error) {
+      setLoadingSeconds(0);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setLoadingSeconds((seconds) => seconds + 1);
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [brickReady, error, brickVersion]);
 
   const reloadBrick = () => {
     try {
@@ -281,6 +302,7 @@ export function PaymentBrick({
     brickReadyRef.current = false;
     setError("");
     setBrickReady(false);
+    setLoadingSeconds(0);
     setBrickVersion((version) => version + 1);
   };
 
@@ -305,6 +327,7 @@ export function PaymentBrick({
         src="https://sdk.mercadopago.com/js/v2"
         strategy="afterInteractive"
         onLoad={() => setScriptReady(true)}
+        onReady={() => setScriptReady(true)}
         onError={() => setError(PAYMENT_BRICK_LOAD_ERROR)}
       />
       <div className="rounded-4xl border border-brand-brown/10 bg-white p-5 shadow-card sm:p-8">
@@ -324,8 +347,20 @@ export function PaymentBrick({
         </div>
 
         {!brickReady && !error && (
-          <div className="mb-4 animate-pulse rounded-2xl bg-brand-mist p-5 text-sm font-bold text-brand-brown/60">
-            Carregando formas de pagamento...
+          <div className="mb-4 rounded-2xl bg-brand-mist p-5 text-sm text-brand-brown/70">
+            <div className="flex items-center justify-between gap-4">
+              <span className="font-extrabold">
+                {loadingSeconds < 8
+                  ? "Carregando formas de pagamento..."
+                  : "Conectando ao Mercado Pago..."}
+              </span>
+              <span className="text-xs font-bold text-brand-brown/45">
+                {loadingSeconds}s
+              </span>
+            </div>
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/70">
+              <div className="h-full w-1/2 animate-[payment-loading_1.15s_ease-in-out_infinite] rounded-full bg-brand-green/70" />
+            </div>
           </div>
         )}
         {error && (
