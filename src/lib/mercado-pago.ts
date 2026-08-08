@@ -31,7 +31,8 @@ type MercadoPagoPreference = {
 
 export type MercadoPagoPreferenceResult = {
   id: string;
-  checkoutUrl?: string;
+  checkoutUrl: string;
+  environment: "test" | "production";
 };
 
 type BrickFormData = {
@@ -58,6 +59,10 @@ const getAccessToken = () => {
     );
   }
   return token;
+};
+
+export const assertMercadoPagoConfigured = () => {
+  getAccessToken();
 };
 
 const apiRequest = async <T>(path: string, init?: RequestInit): Promise<T> => {
@@ -115,7 +120,8 @@ export const createMercadoPagoPreference = async (
 ): Promise<MercadoPagoPreferenceResult> => {
   const { firstName, lastName } = splitName(order.customer.fullName);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const isTestEnvironment = getAccessToken().startsWith("TEST-");
+  const accessToken = getAccessToken();
+  const environment = accessToken.startsWith("TEST-") ? "test" : "production";
   const notificationUrl = siteUrl.startsWith("https://")
     ? `${siteUrl}/api/webhooks/mercado-pago`
     : undefined;
@@ -142,18 +148,6 @@ export const createMercadoPagoPreference = async (
       currency_id: "BRL",
       category_id: "food",
     })),
-    ...(order.shipping > 0
-      ? [
-          {
-            id: "shipping",
-            title: "Frete",
-            quantity: 1,
-            unit_price: Number(order.shipping.toFixed(2)),
-            currency_id: "BRL",
-            category_id: "shipping",
-          },
-        ]
-      : []),
   ];
 
   const preference = await apiRequest<MercadoPagoPreference>(
@@ -181,20 +175,36 @@ export const createMercadoPagoPreference = async (
         },
         external_reference: order.id,
         notification_url: notificationUrl,
+        statement_descriptor: "CAFE BRASIL",
+        shipments: {
+          cost: Number(order.shipping.toFixed(2)),
+          mode: "not_specified",
+        },
         metadata: {
           order_id: order.id,
           order_number: order.orderNumber,
+        },
+        payment_methods: {
+          installments: 12,
         },
         ...(backUrls ? { auto_return: "approved", back_urls: backUrls } : {}),
       }),
     },
   );
 
+  const checkoutUrl =
+    environment === "test"
+      ? preference.sandbox_init_point || preference.init_point
+      : preference.init_point || preference.sandbox_init_point;
+
+  if (!checkoutUrl) {
+    throw new Error("O Mercado Pago não retornou o link de pagamento.");
+  }
+
   return {
     id: preference.id,
-    checkoutUrl: isTestEnvironment
-      ? preference.sandbox_init_point || preference.init_point
-      : preference.init_point || preference.sandbox_init_point,
+    checkoutUrl,
+    environment,
   };
 };
 
@@ -238,8 +248,8 @@ export const createMercadoPagoPayment = async (
       email: order.customer.email,
       first_name: firstName,
       last_name: lastName,
-      identification: order.customer.cpf
-        ? { type: "CPF", number: order.customer.cpf }
+      identification: onlyDigits(order.customer.cpf)
+        ? { type: "CPF", number: onlyDigits(order.customer.cpf) }
         : formData.payer?.identification,
       address: {
         zip_code: order.address.cep,

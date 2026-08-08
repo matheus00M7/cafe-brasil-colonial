@@ -23,8 +23,9 @@ export default async function CheckoutPage() {
           Finalizar pedido
         </h1>
         <p className="mb-9 mt-4 max-w-2xl leading-7 text-brand-ink/60">
-          Preencha seus dados, escolha a entrega e conclua o pagamento por Pix,
-          cartão ou boleto sem sair do site. Você pode comprar sem criar conta.
+          Preencha seus dados, escolha a entrega e finalize com segurança no
+          Mercado Pago. Você pode pagar por Pix, cartão ou boleto sem criar
+          conta na loja.
         </p>
         <CheckoutForm
           signedIn={Boolean(account)}

@@ -175,15 +175,14 @@ export function CheckoutForm({
               Pedido {session.orderNumber}
             </p>
             <p className="mt-2 text-sm leading-6 text-brand-ink/65">
-              Dados conferidos. Agora escolha a forma de pagamento e conclua a
-              compra sem sair do site.
+              Dados conferidos. Agora abra o pagamento seguro do Mercado Pago e
+              escolha Pix, cartão ou boleto.
             </p>
           </div>
           <PaymentBrick
             orderId={session.orderId}
-            amount={session.total}
-            preferenceId={session.mercadoPagoPreferenceId}
-            fallbackCheckoutUrl={session.mercadoPagoCheckoutUrl}
+            checkoutUrl={session.mercadoPagoCheckoutUrl}
+            environment={session.mercadoPagoEnvironment}
             payer={{
               fullName: data.fullName,
               email: data.email,
@@ -370,8 +369,8 @@ export function CheckoutForm({
           {submitting ? "Preparando pagamento..." : "Continuar para pagamento"}
         </Button>
         <p className="text-center text-xs leading-5 text-brand-ink/50">
-          O servidor confere produtos, preços e entrega antes de abrir as formas
-          de pagamento. Dados de cartão não são armazenados pela loja.
+          O servidor confere produtos, preços e entrega antes de abrir o
+          Mercado Pago. Dados de cartão não são armazenados pela loja.
         </p>
       </div>
         <OrderSummary items={items} subtotal={subtotal} />

@@ -19,9 +19,13 @@ NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY=TEST-sua-public-key
 MERCADO_PAGO_ACCESS_TOKEN=TEST-seu-access-token
 ```
 
-As duas credenciais precisam ser copiadas da **mesma aplicação** no painel do
-Mercado Pago. Misturar a Public Key de uma aplicação com o Access Token de
-outra impede a geração do token do cartão.
+Para compras avulsas, o checkout usa **Checkout Pro**: o servidor cria o link
+de pagamento com `MERCADO_PAGO_ACCESS_TOKEN` e o cliente conclui no ambiente
+seguro do Mercado Pago. A `NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY` continua no
+projeto para os fluxos que usam SDK no navegador, como assinaturas.
+
+Quando preencher as duas credenciais, copie ambas da **mesma aplicação** no
+painel do Mercado Pago.
 
 Ao criar uma assinatura com credenciais `TEST`, o backend novo usa o modo
 `auto`: tenta o ambiente `stage` e, se a própria política da aplicação recusar
@@ -63,9 +67,9 @@ O fluxo será:
 1. Cliente adiciona produtos.
 2. Preenche entrega.
 3. O servidor cria o pedido e recalcula os valores.
-4. O Mercado Pago mostra Pix, cartão e boleto.
-5. O cliente paga sem sair do site.
-6. A página `/pedido/...` mostra o resultado.
+4. O servidor cria um link seguro de Checkout Pro no Mercado Pago.
+5. O cliente escolhe Pix, cartão ou boleto e conclui o pagamento no Mercado Pago.
+6. Ao voltar para `/pedido/...`, o site confere o pagamento e o webhook continua atualizando o pedido.
 
 ## 4. Configurar webhooks
 
@@ -125,6 +129,6 @@ Quando todos os testes passarem:
 
 Documentação oficial:
 
-- [Checkout Bricks](https://www.mercadopago.com.br/developers/pt/docs/checkout-bricks/overview)
-- [Payment Brick](https://www.mercadopago.com.br/developers/pt/docs/checkout-bricks/payment-brick/default-rendering)
+- [Checkout Pro](https://www.mercadopago.com.br/developers/pt/docs/checkout-pro/overview)
+- [Criar preferência de pagamento](https://www.mercadopago.com.br/developers/pt/docs/checkout-pro/create-payment-preference)
 - [Webhooks](https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks)

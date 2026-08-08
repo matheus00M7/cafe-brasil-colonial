@@ -27,8 +27,9 @@ export type CheckoutCartItem = {
 export type CheckoutSessionResponse = {
   orderId: string;
   orderNumber: string;
-  mercadoPagoPreferenceId?: string;
-  mercadoPagoCheckoutUrl?: string;
+  mercadoPagoPreferenceId: string;
+  mercadoPagoCheckoutUrl: string;
+  mercadoPagoEnvironment: "test" | "production";
   subtotal: number;
   shipping: number;
   total: number;

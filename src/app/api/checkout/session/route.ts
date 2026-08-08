@@ -11,7 +11,10 @@ import { getCustomerSession } from "@/lib/customer-auth";
 import { updateCustomerDetails } from "@/lib/customer-db";
 import { assertSameOrigin } from "@/lib/request-security";
 import { createAppLog } from "@/lib/app-logs";
-import { createMercadoPagoPreference } from "@/lib/mercado-pago";
+import {
+  assertMercadoPagoConfigured,
+  createMercadoPagoPreference,
+} from "@/lib/mercado-pago";
 
 export const runtime = "nodejs";
 
@@ -43,6 +46,7 @@ export async function POST(request: NextRequest) {
     }
     const items = await buildOrderItems(payload.items);
     const totals = await calculateOrderTotals(items, customer.deliveryMethod);
+    assertMercadoPagoConfigured();
     const id = randomUUID();
     const orderNumber = createOrderNumber();
 
@@ -74,15 +78,11 @@ export async function POST(request: NextRequest) {
       throw new Error("Não foi possível preparar o pedido.");
     }
 
-    let mercadoPagoPreference:
-      | Awaited<ReturnType<typeof createMercadoPagoPreference>>
-      | null = null;
-
-    try {
-      mercadoPagoPreference = await createMercadoPagoPreference(order);
-    } catch (preferenceError) {
+    const mercadoPagoPreference = await createMercadoPagoPreference(
+      order,
+    ).catch(async (preferenceError) => {
       await createAppLog({
-        level: "warn",
+        level: "error",
         area: "pagamentos",
         event: "mercado_pago_preference_failed",
         message: "Falha ao criar link de checkout do Mercado Pago.",
@@ -96,7 +96,12 @@ export async function POST(request: NextRequest) {
               : "Erro desconhecido.",
         },
       });
-    }
+      throw new Error(
+        preferenceError instanceof Error
+          ? preferenceError.message
+          : "Não foi possível conectar ao Mercado Pago.",
+      );
+    });
 
     if (session) {
       await updateCustomerDetails(
@@ -121,8 +126,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       orderId: id,
       orderNumber,
-      mercadoPagoPreferenceId: mercadoPagoPreference?.id,
-      mercadoPagoCheckoutUrl: mercadoPagoPreference?.checkoutUrl,
+      mercadoPagoPreferenceId: mercadoPagoPreference.id,
+      mercadoPagoCheckoutUrl: mercadoPagoPreference.checkoutUrl,
+      mercadoPagoEnvironment: mercadoPagoPreference.environment,
       ...totals,
     });
   } catch (error) {

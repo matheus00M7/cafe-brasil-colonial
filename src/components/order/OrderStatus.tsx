@@ -37,7 +37,7 @@ const statusContent = {
   pending: {
     title: "Aguardando pagamento",
     description:
-      "Conclua o Pix ou boleto. Esta página atualiza automaticamente após a confirmação.",
+      "Conclua o pagamento no Mercado Pago. Esta página atualiza automaticamente após a confirmação.",
     icon: Clock3,
     color: "text-amber-700",
     panel: "border-amber-200 bg-amber-50",
@@ -52,7 +52,8 @@ const statusContent = {
   },
   pending_payment: {
     title: "Pagamento não concluído",
-    description: "O pedido foi criado, mas ainda não há uma cobrança vinculada.",
+    description:
+      "O pedido foi criado, mas o pagamento ainda não foi concluído.",
     icon: Clock3,
     color: "text-amber-700",
     panel: "border-amber-200 bg-amber-50",
